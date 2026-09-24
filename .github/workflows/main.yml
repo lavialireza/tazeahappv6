@@ -1,0 +1,120 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle 8.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.6'
+
+      - name: Check Gradle
+        run: gradle --version
+
+      - name: Build Admin Debug APK
+        run: gradle :app:assembleAdminDebug -PreleaseNumber=$GITHUB_RUN_NUMBER --stacktrace --warning-mode all
+
+      - name: Build Viewer Debug APK
+        run: gradle :app:assembleViewerDebug -PreleaseNumber=$GITHUB_RUN_NUMBER --stacktrace --warning-mode all
+
+      - name: Verify APK version codes match release number
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="${GITHUB_RUN_NUMBER}"
+          # Find an installed aapt instead of hard-coding one Build Tools version.
+          AAPT="$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name aapt -perm -111 2>/dev/null | sort -V | tail -n 1)"
+          if [ -z "${AAPT}" ] || [ ! -x "${AAPT}" ]; then
+            echo "ERROR: Android aapt was not found under ${ANDROID_HOME}/build-tools"
+            exit 1
+          fi
+
+          for APK in app/build/outputs/apk/admin/debug/app-admin-debug.apk app/build/outputs/apk/viewer/debug/app-viewer-debug.apk; do
+            test -f "$APK"
+
+            # Extract only the numeric value after versionCode='...'.
+            BADGING="$($AAPT dump badging "$APK")"
+            CODE="$(printf '%s\n' "$BADGING" | grep -oE "versionCode='[0-9]+'" | head -n 1 | sed "s/versionCode='//;s/'//")"
+
+            if [ -z "$CODE" ]; then
+              echo "ERROR: Could not read versionCode from $APK"
+              echo "$BADGING"
+              exit 1
+            fi
+
+            echo "$APK versionCode=$CODE expected=$EXPECTED"
+            test "$CODE" = "$EXPECTED"
+          done
+
+      - name: Verify APKs and Viewer assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f app/build/outputs/apk/admin/debug/app-admin-debug.apk
+          test -f app/build/outputs/apk/viewer/debug/app-viewer-debug.apk
+          unzip -l app/build/outputs/apk/viewer/debug/app-viewer-debug.apk | grep -F 'assets/content/001_sample.taz'
+          if unzip -l app/build/outputs/apk/viewer/debug/app-viewer-debug.apk | grep -E 'assets/content/.*\.json' >/dev/null; then
+            echo 'ERROR: plaintext JSON content was packaged in Viewer APK.'
+            exit 1
+          fi
+          echo 'APK verification passed.'
+
+      - name: Upload Admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tazieh-admin-debug-apk
+          path: app/build/outputs/apk/admin/debug/app-admin-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Viewer APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tazieh-viewer-debug-apk
+          path: app/build/outputs/apk/viewer/debug/app-viewer-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="apk-build-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            app/build/outputs/apk/admin/debug/app-admin-debug.apk \
+            app/build/outputs/apk/viewer/debug/app-viewer-debug.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Tazieh Android - Admin and Viewer #${GITHUB_RUN_NUMBER}" \
+            --notes "Two debug APKs: Admin and offline Viewer." \
+            --prerelease
+
+      - name: Upload build reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            **/build/reports/**
+            **/build/outputs/logs/**
+          if-no-files-found: ignore
+          retention-days: 7
