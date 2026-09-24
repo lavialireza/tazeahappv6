@@ -1,0 +1,6 @@
+# آدرس پایه سرور بروزرسانی مدیر
+# فایل واقعی را می‌توانید با نام update-servers.properties بسازید یا همین مقادیر را در local.properties قرار دهید.
+UPDATE_SERVER_ADMIN_URL=https://example.com/tazieh/admin
+
+# آدرس پایه سرور بروزرسانی کاربر
+UPDATE_SERVER_VIEWER_URL=https://example.com/tazieh/user

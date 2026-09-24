@@ -1,0 +1,18 @@
+Tazieh Android ACCESS — Stage45
+
+Real implementation: policy synchronization status.
+
+Added:
+- Stable SHA-256 fingerprint for effective special-user policy settings.
+- Detection of policy changes after last successful send.
+- User-card status: sent/current vs changed/needs resend vs never sent.
+- Full user report synchronization status.
+- Backup/restore support for the last-sent fingerprint.
+- Backward compatibility: old records without fingerprint are treated as needing resend.
+
+Preserved:
+- Stage44 last-policy-sent timestamp.
+- Stage43 policy history/restore.
+- Stage42 per-target policy versions.
+- Stage41 access security behavior.
+- Existing Gallery and Footnotes features.

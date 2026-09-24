@@ -1,0 +1,4 @@
+Stage60.2 Build Fix V2
+اصلاح خطای Kotlin در ViewerAccessManagementScreen.kt.
+بلوک‌های showComparePolicies / showDraftTest / showSettingsImportConfirm داخل composable نگه داشته شدند و brace اضافی زودهنگام حذف شد.
+هیچ بخش دیگری از برنامه تغییر داده نشده است.

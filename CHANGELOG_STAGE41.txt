@@ -1,0 +1,5 @@
+Stage 41 - Security Hardening
+- Disabled/expired special users no longer fall back to public permissions.
+- Normalize policy target IDs.
+- Reject invalid/old/replayed policy versions.
+- Persist last imported policy version after successful import.

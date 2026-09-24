@@ -1,0 +1,18 @@
+Tazieh Android — Stage 31
+
+Real implementation: Viewer installation ID sharing workflow.
+
+Changes:
+- Added «ارسال شناسه» in Viewer Settings/access status.
+- Uses Android ACTION_SEND with text/plain and system share chooser.
+- Shared message contains the exact persistent Viewer installation ID and a short instruction for the Admin.
+- Added «کپی شناسه» in the same Viewer status card.
+- Existing access-policy transfer, permissions, gallery and footnote features were not changed.
+
+Workflow:
+1) Viewer opens Settings and sees its persistent installation ID.
+2) Viewer taps «ارسال شناسه» and sends the ID through a messaging/email/share app, or uses «کپی شناسه».
+3) Admin enters that ID in Viewer Access Management → «کاربر خاص / همکار».
+4) Admin selects profile/permissions and saves the special user.
+5) Admin exports/sends the signed JSON policy directly to the matching Viewer.
+6) Viewer accepts/imports the policy only if target ID matches its own installation ID and the policy signature/expiry are valid.

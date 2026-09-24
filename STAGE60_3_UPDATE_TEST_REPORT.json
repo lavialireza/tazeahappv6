@@ -1,0 +1,16 @@
+{
+  "stage": "60.3",
+  "purpose": "real online update test",
+  "offline_default": true,
+  "update_source": "GitHub Releases API",
+  "local_update_json_used_for_check": false,
+  "flavors": [
+    "admin",
+    "viewer"
+  ],
+  "release_tag_pattern": "apk-build-${GITHUB_RUN_NUMBER}",
+  "expected_assets": [
+    "app-admin-debug.apk",
+    "app-viewer-debug.apk"
+  ]
+}

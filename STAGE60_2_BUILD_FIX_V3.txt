@@ -1,0 +1,6 @@
+Stage60.2 Build Fix V3
+
+Fix: InfoScreens.kt referenced an undefined variable `installed` in the Smart Update history recording callbacks.
+The callbacks now read the currently installed build number directly from UpdateHelper.getInstalledVersion(context).
+
+No unrelated project areas were changed.

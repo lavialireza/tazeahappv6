@@ -1,0 +1,9 @@
+Tazieh Android - Footnote Stage 26
+
+Build error fix based on GitHub Actions log from 2026-09-17:
+- TextScreen.kt: FootnotesSection used `context` without declaring it in that composable scope.
+- Added `val context = LocalContext.current` inside FootnotesSection.
+
+No other feature changes were made in this stage.
+
+Important: Android/Gradle build was not run locally in this environment; this ZIP is source-fixed based on the supplied CI error log.

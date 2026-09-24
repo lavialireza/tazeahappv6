@@ -1,0 +1,12 @@
+Tazieh Android ACCESS STAGE35
+Build error fix based on GitHub Actions log logs_95416631195.zip
+
+REAL FIX:
+- Added missing import androidx.compose.foundation.rememberScrollState to SpecialUsersManagementScreen.kt.
+- This fixes the compiler error at line 85: Unresolved reference: rememberScrollState.
+- No functional changes to user management, gallery, footnotes, Viewer access, or other modules.
+
+Verification:
+- Source inspected and exact reported compiler error addressed.
+- ZIP integrity will be checked after packaging.
+- Android SDK/Gradle is not available in this environment, so no local APK build is claimed.

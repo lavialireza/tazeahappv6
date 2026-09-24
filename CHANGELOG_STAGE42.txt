@@ -1,0 +1,7 @@
+Stage 42 - Policy Version Isolation
+- Added per-target policy version map.
+- Public policy uses target key '*'.
+- Policy export now embeds the version for its target installation ID.
+- Imported policy replay protection is now per target instead of global.
+- Existing Stage 41 security checks preserved.
+- Added Persian documentation.

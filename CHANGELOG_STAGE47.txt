@@ -1,0 +1,9 @@
+Stage47 - Final QA & Security Audit
+
+REAL FIXES:
+1. Protect POLICY_APPLIED receiver with signature-level permission.
+2. Validate applied policy version against the last policy actually sent to the user.
+3. Validate policy fingerprint in Viewer -> Admin applied-policy receipt.
+4. Persist lastPolicySentVersion through user storage, backup/restore and history.
+5. Include policyFingerprint in transferred policy and applied receipt.
+6. Preserve Stage41-46 security, history, dashboard, sync, bulk send, clone and reporting features.

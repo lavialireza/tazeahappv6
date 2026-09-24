@@ -1,0 +1,84 @@
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:72:                val pp = org.json.JSONObject(); ViewerAccessPolicy.permissionLabels.keys.forEach { k -> pp.put(k, u.permissions[k] == true) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:223:                                            val disabled = user.copy(enabled = false, permissions = ViewerAccessPolicy.permissionLabels.keys.associateWith { false })
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:323:                                permissions = ViewerAccessPolicy.permissionLabels.keys.associateWith { k -> pp?.optBoolean(k, false) ?: false },
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:367:            item { Text("مجوزهای فعال: ${user.permissions.count { it.value }} از ${ViewerAccessPolicy.permissionLabels.size}") }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:368:            items(ViewerAccessPolicy.permissionLabels.toList().filter { user.permissions[it.first] == true }) { Text("✓ ${it.second}") }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:430:                    items(ViewerAccessPolicy.permissionLabels.toList()) { entry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:517:                                Text("مجوزهای فعال: ${h.user.permissions.count { it.value }} از ${ViewerAccessPolicy.permissionLabels.size}")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:629:                val perms = ViewerAccessPolicy.permissionLabels.filter { (key, _) -> u.permissions[key] == true }.values.joinToString("|")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt:652:    val permissionStats = ViewerAccessPolicy.permissionLabels.map { (key, label) ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/MainMenuScreen.kt:60:    featureEnabled: (String) -> Boolean = { true }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/MainMenuScreen.kt:107:            if (featureEnabled("read")) MenuCard("لیست تعزیه‌ها", Icons.Filled.List, onOpenTaziehList, accentColor = TaziehGreen)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/MainMenuScreen.kt:109:            if (featureEnabled("search")) MenuCard("جستجو", Icons.Filled.Search, onOpenSearch)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/MainMenuScreen.kt:111:            if (featureEnabled("bookmarks")) MenuCard("علاقه‌مندی‌ها", Icons.Filled.Favorite, onOpenBookmarks)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/MainMenuScreen.kt:113:            if (featureEnabled("notes")) MenuCard("دفتر یادداشت", Icons.Filled.Edit, onOpenNotes)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/MainMenuScreen.kt:115:            if (featureEnabled("gallery")) MenuCard("گالری تصاویر", Icons.Filled.PhotoLibrary, onOpenGallery)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/MainMenuScreen.kt:117:            if (featureEnabled("read")) MenuCard("نقش من", Icons.Filled.School, onOpenMyRole, accentColor = TaziehGreen)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/TextScreen.kt:277:                        val canCopy = !com.example.bookapp.BuildConfig.PUBLIC_VIEWER || ViewerAccessPolicy.hasPermission(context, "copy")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/TextScreen.kt:278:                        val canShare = !com.example.bookapp.BuildConfig.PUBLIC_VIEWER || ViewerAccessPolicy.hasPermission(context, "share")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/ViewerAccessManagementScreen.kt:100:                        ViewerAccessPolicy.permissionLabels.forEach { (key, label) ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/ViewerAccessManagementScreen.kt:136:                            ViewerAccessPolicy.permissionLabels.forEach { (key, label) ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/ViewerAccessManagementScreen.kt:232:                            Text("مجوزهای فعال: ${user.permissions.count { it.value }} از ${ViewerAccessPolicy.permissionLabels.size}", style = MaterialTheme.typography.bodySmall)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/screens/InfoScreens.kt:426:                val effectivePermissions = com.example.bookapp.data.ViewerAccessPolicy.getEffectivePermissions(context)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:122:    var viewerPermissions by remember(publicViewer) { mutableStateOf(if (publicViewer) ViewerAccessPolicy.getEffectivePermissions(context) else ViewerAccessPolicy.permissionLabels.keys.associateWith { true }) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:124:    fun featureEnabled(key: String): Boolean = !publicViewer || viewerPermissions[key] == true
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:126:        if (featureEnabled(key)) navController.navigate(route)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:148:        shortcutTarget == "search" && featureEnabled("search") -> ROUTE_SEARCH
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:149:        shortcutTarget == "notes" && featureEnabled("notes") -> ROUTE_NOTES
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:150:        shortcutTarget == "bookmarks" && featureEnabled("bookmarks") -> ROUTE_BOOKMARKS
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:237:                featureEnabled = ::featureEnabled
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:249:        if (featureEnabled("search")) composable(ROUTE_SEARCH) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:275:                showBookmarks = featureEnabled("bookmarks"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:277:                    if (featureEnabled("bookmarks")) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:288:        if (featureEnabled("bookmarks")) composable(ROUTE_BOOKMARKS) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:301:        if (featureEnabled("notes")) composable(ROUTE_NOTES) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:332:        if (featureEnabled("read")) composable(ROUTE_MY_ROLE) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:371:                showPdf = featureEnabled("pdf")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:375:        if (featureEnabled("gallery")) composable(ROUTE_ALL_IMAGES) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:391:        if (featureEnabled("training")) composable(ROUTE_REHEARSAL) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:424:                showAppIntro = featureEnabled("appIntro"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:451:                    if (result.isSuccess && publicViewer) viewerPermissions = ViewerAccessPolicy.getEffectivePermissions(context)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:822:        if (featureEnabled("read")) composable(ROUTE_FIELDS) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:841:        if (featureEnabled("read")) composable(ROUTE_TAZIEHS) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:858:                    if (featureEnabled("gallery")) navController.navigate("tazieh_gallery/${item.id}")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:860:                showGallery = featureEnabled("gallery"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:865:        if (featureEnabled("read")) composable(ROUTE_ROLES) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:899:                onOpenGallery = { if (featureEnabled("gallery")) navController.navigate("tazieh_gallery/$taziehId") },
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:900:                showGallery = featureEnabled("gallery"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:903:                showCompare = featureEnabled("compare")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:907:        if (featureEnabled("read")) composable(ROUTE_TAZIEH_INDEX) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:946:                onOpenGallery = { if (featureEnabled("gallery")) navController.navigate("tazieh_gallery/$taziehId") },
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:947:                showGallery = featureEnabled("gallery"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1097:                showPdf = featureEnabled("pdf")
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1182:                canAddImage = featureEnabled("gallery"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1188:        if (featureEnabled("compare")) composable(ROUTE_COMPARE) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1213:        if (featureEnabled("read")) composable(ROUTE_SECTIONS) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1246:                        if (featureEnabled("pdf")) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1264:        if (featureEnabled("read")) composable(ROUTE_TEXT_PAGER) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1313:                        if (!featureEnabled("footnotes")) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1328:                    onEditFootnote = { id, fn, term, explanation -> if (featureEnabled("footnotes")) scope.launch {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1331:                    onDeleteFootnote = { _, fn -> if (featureEnabled("footnotes")) scope.launch { db.footnoteDao().delete(fn.id) } },
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1340:        if (featureEnabled("read")) composable(ROUTE_TEXT) { backStackEntry ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1379:                onToggleBookmark = { if (featureEnabled("bookmarks")) bookmarked = Prefs.toggleBookmark(context, sectionId) },
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1380:                canBookmark = featureEnabled("bookmarks"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1381:                canAudio = featureEnabled("audio"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1382:                canTts = featureEnabled("tts"),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1387:                footnotes = if (featureEnabled("footnotes")) footnotes else emptyList(),
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1390:                    if (!featureEnabled("footnotes")) {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1427:                onEditFootnote = { fn, term, explanation -> if (featureEnabled("footnotes")) scope.launch {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/ui/AppNavigation.kt:1441:                onDeleteFootnote = { fn -> if (featureEnabled("footnotes")) scope.launch {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessTransfer.kt:46:        val p = JSONObject(); ViewerAccessPolicy.permissionLabels.keys.forEach { p.put(it, permissions[it] == true) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessTransfer.kt:77:        val permissions = ViewerAccessPolicy.permissionLabels.keys.associateWith { p.optBoolean(it, false) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:18:    val permissionLabels = linkedMapOf(
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:69:    fun defaultPermissions(): Map<String, Boolean> = permissionLabels.keys.associateWith { key ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:81:    fun getEffectivePermissions(context: Context): Map<String, Boolean> {
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:95:    fun hasPermission(context: Context, key: String): Boolean = getEffectivePermissions(context)[key] == true
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:98:        val obj = JSONObject(); permissionLabels.keys.forEach { obj.put(it, permissions[it] == true) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:154:            permissionLabels.keys.associateWith { key -> obj.optBoolean(key, defaultPermissions()[key] == true) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:160:        permissionLabels.keys.forEach { obj.put(it, permissions[it] == true) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:208:                val perms = permissionLabels.keys.associateWith { p?.optBoolean(it, false) ?: false }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:256:            val p = JSONObject(); permissionLabels.keys.forEach { p.put(it, user.permissions[it] == true) }
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:309:        val p = JSONObject(); permissionLabels.keys.forEach { p.put(it, user.permissions[it] == true) }; o.put("permissions", p)
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:319:            permissions = permissionLabels.keys.associateWith { k -> pp?.optBoolean(k, false) ?: false },
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt:364:            permissionLabels.keys.sorted().forEach { key ->
+/mnt/data/audit49/app/src/main/java/com/example/bookapp/data/AccessAuditLog.kt:59:        val labels = ViewerAccessPolicy.permissionLabels

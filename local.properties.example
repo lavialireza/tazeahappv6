@@ -1,0 +1,12 @@
+# این فایل را کپی کنید به‌عنوان local.properties (که در .gitignore است، هرگز commit نمی‌شود)
+# و مقادیر واقعی کلید امضای Release خودتان را داخلش بنویسید.
+#
+# ساخت کلید (یک‌بار، با keytool که همراه Java نصب است):
+#   keytool -genkey -v -keystore release.keystore -alias taziehapp -keyalg RSA -keysize 2048 -validity 10000
+#
+# سپس همین مقادیر را اینجا (یا به‌عنوان Secret در GitHub Actions) قرار دهید:
+
+RELEASE_STORE_FILE=/absolute/path/to/release.keystore
+RELEASE_STORE_PASSWORD=your-store-password
+RELEASE_KEY_ALIAS=taziehapp
+RELEASE_KEY_PASSWORD=your-key-password

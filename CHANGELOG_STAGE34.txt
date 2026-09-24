@@ -1,0 +1,7 @@
+Stage34 - Professional Special Users List Management
+- Search and filtering by user identity/contact/role/installation ID.
+- Status filters: all, active, disabled, expired.
+- Sorting: name, newest registration, nearest expiry.
+- Visible/total user count.
+- Direct policy sharing from a user's management dialog.
+- Based on Stage33; no changes to gallery/footnote features.

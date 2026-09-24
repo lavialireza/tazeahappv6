@@ -1,0 +1,11 @@
+Stage46 - All Special User Management Enhancements
+
+1. Viewer -> Admin policy-applied receipt
+2. Immediate revoke/disable action
+3. Bulk selected-user policy dispatch
+4. Internal integrated access test dialog
+5. Clone permissions into a new user with a new installation ID
+6. CSV user report export
+7. 7-day expiry warning
+8. Backup/restore persistence for applied-policy fields
+9. Existing Stage41-45 security, history, dashboard, audit and sync features preserved.

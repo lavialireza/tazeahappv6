@@ -1,0 +1,5 @@
+Stage 49 - Four access-management refinements
+1. Viewer policy import now preserves existing personal/admin metadata and changes only access fields.
+2. User cards show explicit 3-state synchronization: not sent / sent awaiting Viewer confirmation / applied and synchronized; changed policies show resend required.
+3. Immediate revoke now disables permissions, sends the revoke policy to the selected Viewer, and records the state as awaiting confirmation.
+4. Existing send/apply fingerprint and version verification remain in force.

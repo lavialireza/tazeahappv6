@@ -1,0 +1,8 @@
+Tazieh Android ACCESS Stage48 - Build Error Fix
+Base: Stage47
+Fixed only the compiler errors reported by GitHub Actions:
+- Corrected Pair/Int precedence in the duplicate-ID test.
+- Made LazyColumn test/stat rows use indexed items to avoid overload/destructuring ambiguity.
+- Corrected permissionLabels MapEntry access in CSV report generation (key instead of first).
+No new features were added. Stage47 functionality is preserved.
+Local Android Gradle build was not run because the project has no Gradle wrapper/Android SDK in this environment.

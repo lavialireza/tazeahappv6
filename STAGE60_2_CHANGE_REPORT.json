@@ -1,0 +1,35 @@
+{
+  "base": "Tazieh_Android_ACCESS_STAGE60_1_SMART_UPDATE_MANIFEST.zip",
+  "project_root": "/mnt/data/Tazieh_STAGE60_2_SMART_UPDATE",
+  "update_related_files_found": [
+    "app/src/viewer/AndroidManifest.xml",
+    "app/src/main/res/xml/file_paths.xml",
+    "app/src/main/java/com/example/bookapp/PolicyAppliedReceiver.kt",
+    "app/src/main/java/com/example/bookapp/ui/AppNavigation.kt",
+    "app/src/main/java/com/example/bookapp/ui/screens/TaziehCorrectionsScreen.kt",
+    "app/src/main/java/com/example/bookapp/ui/screens/ViewerAccessManagementScreen.kt",
+    "app/src/main/java/com/example/bookapp/ui/screens/NotesScreen.kt",
+    "app/src/main/java/com/example/bookapp/ui/screens/ContentEditorScreen.kt",
+    "app/src/main/java/com/example/bookapp/ui/screens/InfoScreens.kt",
+    "app/src/main/java/com/example/bookapp/ui/screens/TaziehGalleryScreen.kt",
+    "app/src/main/java/com/example/bookapp/ui/screens/SpecialUsersManagementScreen.kt",
+    "app/src/main/java/com/example/bookapp/data/NoteEntity.kt",
+    "app/src/main/java/com/example/bookapp/data/TaziehCorrectionStore.kt",
+    "app/src/main/java/com/example/bookapp/data/AppDatabase.kt",
+    "app/src/main/java/com/example/bookapp/data/BackupHelper.kt",
+    "app/src/main/java/com/example/bookapp/data/Dao.kt",
+    "app/src/main/java/com/example/bookapp/data/ContentProtectionHelper.kt",
+    "app/src/main/java/com/example/bookapp/data/UpdateHistoryStore.kt",
+    "app/src/main/java/com/example/bookapp/data/ViewerAccessPolicy.kt",
+    "app/src/main/java/com/example/bookapp/data/UpdateHelper.kt",
+    "app/src/main/java/com/example/bookapp/data/UserDataEntities.kt",
+    "app/src/test/java/com/example/bookapp/data/DataLayerTest.kt",
+    "app/src/test/java/com/example/bookapp/data/ContentMergeTest.kt"
+  ],
+  "stage": "60.2",
+  "changes": [
+    "Added Stage60.2 smart-update architecture note",
+    "Added update.json.example manifest template under app/src/main/assets",
+    "No unrelated application features changed"
+  ]
+}

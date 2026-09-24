@@ -1,0 +1,6 @@
+Stage29 - Special User Access Verification
+- Added real access-test button for a special-user installation ID.
+- The test reads persisted records and reports saved/not-found, active/expired, and active permission count.
+- Added copy-installation-ID button for safer transfer without retyping.
+- Made expiry date parsing strict (invalid calendar dates are rejected).
+- No other app feature was changed.

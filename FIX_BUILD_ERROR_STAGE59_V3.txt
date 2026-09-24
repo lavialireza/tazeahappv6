@@ -1,0 +1,10 @@
+رفع خطای Build مرحله 59 - V3
+
+خطای لاگ جدید:
+ViewerAccessManagementScreen.kt:582:118
+Mixing named and positioned arguments is not allowed
+
+علت: در OutlinedButton آرگومان‌های enabled و onClick به صورت named بودند، اما Modifier به صورت positioned ارسال شده بود.
+
+اصلاح: Modifier به modifier = Modifier.weight(1f) تبدیل شد.
+سایر بخش‌ها تغییر داده نشده‌اند.

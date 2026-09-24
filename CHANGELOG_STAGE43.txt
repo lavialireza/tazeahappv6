@@ -1,0 +1,11 @@
+Tazieh Android ACCESS — Stage43
+
+New:
+- Per-special-user policy history (up to 20 previous versions).
+- View policy history from user editor.
+- Restore a previous policy snapshot as a new policy revision.
+- Restore action is audit logged.
+- Existing Stage42 per-target policy-version isolation is preserved.
+- Restored policies are not automatically sent to Viewer; Admin must explicitly send the policy.
+
+No changes to gallery, footnotes, Viewer UI, or existing permission enforcement.

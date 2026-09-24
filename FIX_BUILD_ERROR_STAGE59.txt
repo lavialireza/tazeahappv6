@@ -1,0 +1,9 @@
+رفع خطای Build در Stage59
+
+خطای اصلی در فایل:
+app/src/main/java/com/example/bookapp/ui/screens/ViewerAccessManagementScreen.kt
+
+علت: یک آکولاد بسته اضافی قبل از بلوک showComparePolicies وجود داشت که تابع ViewerAccessManagementScreen را زودتر از موعد می‌بست. در نتیجه بلوک‌های showComparePolicies، showDraftTest و showSettingsImportConfirm خارج از تابع قرار می‌گرفتند و Kotlin خطای 'Expecting a top level declaration' می‌داد.
+
+اصلاح: فقط همان آکولاد اضافی حذف شد و سایر بخش‌های پروژه دستکاری نشدند.
+هدف: رفع خطای کامپایل Admin Debug APK.

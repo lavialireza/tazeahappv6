@@ -1,0 +1,8 @@
+Stage 44 - Last Policy Sent Tracking
+- Added SpecialUser.lastPolicySentAt with backward-compatible default.
+- Persisted field in SharedPreferences/file JSON, history, backup and restore paths.
+- Added ViewerAccessPolicy.markPolicySent() with read-back verification.
+- Admin user cards now show whether/when the policy was last sent.
+- Full user report now shows the last policy send time.
+- Sending policy from the user editor records the send timestamp and audit entry.
+- Marking a send does not bump the policy version because permissions did not change.
