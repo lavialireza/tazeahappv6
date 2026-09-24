@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">تعزیه و شبیه‌خوانی</string>
+    <string name="shortcut_search">جستجو</string>
+    <string name="shortcut_notes">دفتر یادداشت</string>
+    <string name="shortcut_bookmarks">علاقه‌مندی‌ها</string>
+</resources>

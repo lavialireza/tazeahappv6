@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="search"
+        android:enabled="true"
+        android:icon="@drawable/logo"
+        android:shortcutShortLabel="@string/shortcut_search">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.example.bookapp"
+            android:targetClass="com.example.bookapp.MainActivity">
+            <extra android:name="shortcut_target" android:value="search" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="notes"
+        android:enabled="true"
+        android:icon="@drawable/logo"
+        android:shortcutShortLabel="@string/shortcut_notes">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.example.bookapp"
+            android:targetClass="com.example.bookapp.MainActivity">
+            <extra android:name="shortcut_target" android:value="notes" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="bookmarks"
+        android:enabled="true"
+        android:icon="@drawable/logo"
+        android:shortcutShortLabel="@string/shortcut_bookmarks">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.example.bookapp"
+            android:targetClass="com.example.bookapp.MainActivity">
+            <extra android:name="shortcut_target" android:value="bookmarks" />
+        </intent>
+    </shortcut>
+</shortcuts>

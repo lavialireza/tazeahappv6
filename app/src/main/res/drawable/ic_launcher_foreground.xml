@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- گنبد ساده به‌عنوان نماد بصری تعزیه -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M54,20 C40,20 30,32 30,46 L78,46 C78,32 68,20 54,20 Z" />
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M26,46 L82,46 L82,54 L26,54 Z" />
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M34,54 L74,54 L74,88 L34,88 Z" />
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M50,20 L58,20 L58,10 L54,4 L50,10 Z" />
+</vector>
