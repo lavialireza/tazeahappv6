@@ -1,0 +1,14 @@
+{
+  "packageName": "com.example.bookapp",
+  "access": "admin",
+  "versionCode": 100001,
+  "versionName": "1.0.1",
+  "apkUrl": "https://YOUR-DOMAIN/tazieh/admin/TaziehStudio-Admin.apk",
+  "sha256": "PUT_64_HEX_SHA256_OF_APK_HERE",
+  "forceUpdate": false,
+  "minSupportedVersion": 0,
+  "releaseDate": "2026-09-19",
+  "releaseNotes": [
+    "نمونه فایل بروزرسانی مدیر"
+  ]
+}

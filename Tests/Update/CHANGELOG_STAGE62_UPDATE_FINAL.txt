@@ -1,0 +1,7 @@
+Stage 62 - Update Finalization
+- Added mandatory SHA-256 validation for update APKs.
+- Added HTTPS redirect validation for manifest and APK downloads.
+- Added strict versionCode validation and downgrade prevention.
+- Added APK size limit and integrity/package validation before install.
+- Updated Admin/User update.json templates with sha256 field.
+- Verified actual package IDs in the project: com.example.bookapp and com.example.bookapp.viewer.
