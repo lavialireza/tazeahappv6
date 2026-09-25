@@ -443,6 +443,138 @@ fun SettingsScreen(
                 Text("${java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(h.at))} — ${h.fromVersion} → ${h.toVersion} — ${if (h.success) "موفق" else "ناموفق"}", style = MaterialTheme.typography.bodySmall)
             }
 
+            if (showUpdateManifestTools) {
+                Spacer(Modifier.height(32.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+                Text("ساخت فایل update.json", style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "فایل APK نهایی (Admin یا Viewer) را انتخاب کنید تا نام پکیج، versionCode و versionName مستقیماً از " +
+                        "خود APK خوانده شود و SHA-256 آن محاسبه شود. سپس آدرس دانلود همان فایل روی سرورتان را وارد کنید " +
+                        "تا فایل update.json آماده برای آپلود کنار همان APK ساخته شود.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+
+                var pickedApkFile by remember { mutableStateOf<java.io.File?>(null) }
+                var pickedApkName by remember { mutableStateOf<String?>(null) }
+                var apkUrlInput by remember { mutableStateOf("") }
+                var minSupportedVersionInput by remember { mutableStateOf("") }
+                var forceUpdateChecked by remember { mutableStateOf(false) }
+                var releaseNotesInput by remember { mutableStateOf("") }
+                var manifestMessage by remember { mutableStateOf<String?>(null) }
+                var generatedManifest by remember { mutableStateOf<UpdateHelper.GeneratedManifest?>(null) }
+
+                val pickApkLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument()
+                ) { uri ->
+                    if (uri != null) {
+                        manifestMessage = null
+                        generatedManifest = null
+                        runCatching {
+                            val dest = java.io.File(context.cacheDir, "manifest_source.apk")
+                            context.contentResolver.openInputStream(uri).use { input ->
+                                requireNotNull(input) { "فایل خوانده نشد." }
+                                dest.outputStream().use { output -> input.copyTo(output) }
+                            }
+                            dest
+                        }.fold(
+                            onSuccess = { file ->
+                                pickedApkFile = file
+                                pickedApkName = uri.lastPathSegment ?: file.name
+                            },
+                            onFailure = { manifestMessage = "خواندن فایل APK ناموفق بود: ${it.message}" }
+                        )
+                    }
+                }
+                val saveManifestLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("application/json")
+                ) { uri ->
+                    val manifest = generatedManifest
+                    if (uri != null && manifest != null) {
+                        runCatching {
+                            context.contentResolver.openOutputStream(uri)?.use { output ->
+                                output.write(manifest.json.toByteArray(Charsets.UTF_8))
+                            } ?: error("محل ذخیره باز نشد.")
+                        }.fold(
+                            onSuccess = { manifestMessage = "فایل update.json ذخیره شد ✅" },
+                            onFailure = { manifestMessage = "ذخیره فایل ناموفق بود: ${it.message}" }
+                        )
+                    }
+                }
+
+                OutlinedButton(onClick = { pickApkLauncher.launch(arrayOf("application/vnd.android.package-archive", "*/*")) }) {
+                    Text(pickedApkName?.let { "APK انتخاب‌شده: $it" } ?: "انتخاب فایل APK")
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = apkUrlInput,
+                    onValueChange = { apkUrlInput = it },
+                    label = { Text("آدرس دانلود همین APK روی سرور (https://...)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = minSupportedVersionInput,
+                    onValueChange = { minSupportedVersionInput = it.filter(Char::isDigit) },
+                    label = { Text("حداقل نسخه مجاز (versionCode) — اختیاری") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Checkbox(checked = forceUpdateChecked, onCheckedChange = { forceUpdateChecked = it })
+                    Text("این بروزرسانی اجباری است")
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = releaseNotesInput,
+                    onValueChange = { releaseNotesInput = it },
+                    label = { Text("تغییرات این نسخه (هر خط یک مورد)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        val apk = pickedApkFile
+                        if (apk == null) {
+                            manifestMessage = "ابتدا فایل APK را انتخاب کنید."
+                            return@Button
+                        }
+                        val notes = releaseNotesInput.lines().map { it.trim() }.filter { it.isNotBlank() }
+                        val result = UpdateHelper.createUpdateManifest(
+                            context = context,
+                            apkFile = apk,
+                            apkUrl = apkUrlInput,
+                            minSupportedVersion = minSupportedVersionInput.toIntOrNull() ?: 0,
+                            forceUpdate = forceUpdateChecked,
+                            releaseNotes = notes
+                        )
+                        result.fold(
+                            onSuccess = { manifest ->
+                                generatedManifest = manifest
+                                manifestMessage = "ساخته شد ✅ — پکیج: ${manifest.packageName} (${manifest.access})، نسخه: ${manifest.versionName} (build ${manifest.versionCode})\nSHA-256: ${manifest.sha256}"
+                            },
+                            onFailure = { manifestMessage = "ساخت update.json ناموفق بود: ${it.message}" }
+                        )
+                    }
+                ) {
+                    Text("ساخت update.json")
+                }
+                if (generatedManifest != null) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = { saveManifestLauncher.launch("update.json") }) {
+                        Text("ذخیره/اشتراک‌گذاری update.json")
+                    }
+                }
+                manifestMessage?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
             if (showContentSync) {
                             Text("بروزرسانی محتوا", style = MaterialTheme.typography.bodyLarge)

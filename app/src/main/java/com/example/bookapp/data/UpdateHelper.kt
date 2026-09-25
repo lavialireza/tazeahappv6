@@ -19,7 +19,6 @@ import java.security.MessageDigest
 
 /** بررسی دستی بروزرسانی و دریافت APK داخل خود برنامه؛ استفاده عادی برنامه آفلاین باقی می‌ماند. */
 object UpdateHelper {
-    private const val MANIFEST_ASSET = "update.json"
     private const val MAX_APK_BYTES = 300L * 1024L * 1024L
 
     data class UpdateInfo(
@@ -157,18 +156,69 @@ object UpdateHelper {
         }
     }
 
-    fun createUpdateManifest(context: Context, versionCode: Int, versionName: String, minSupportedVersion: Int, forceUpdate: Boolean, apkFile: String, releaseNotes: List<String>): File {
+    /** خروجی ساخت فایل update.json برای یک APK مشخص. */
+    data class GeneratedManifest(
+        val file: File,
+        val json: String,
+        val packageName: String,
+        val access: String,
+        val versionCode: Int,
+        val versionName: String,
+        val sha256: String
+    )
+
+    /**
+     * فایل update.json را مستقیماً از روی یک فایل APK واقعی می‌سازد (نه از روی
+     * مقادیر تایپ‌شده‌ی دستی)؛ نام پکیج/versionCode/versionName از خود APK
+     * خوانده می‌شوند تا با آدرس دانلودی که بعداً روی سرور می‌گذارید هماهنگ
+     * بمانند. کلید‌های خروجی دقیقاً همان قالبی است که checkForUpdate می‌خواند
+     * (packageName, access, versionCode, versionName, apkUrl, sha256, ...).
+     */
+    fun createUpdateManifest(
+        context: Context,
+        apkFile: File,
+        apkUrl: String,
+        minSupportedVersion: Int = 0,
+        forceUpdate: Boolean = false,
+        releaseNotes: List<String> = emptyList()
+    ): Result<GeneratedManifest> = runCatching {
+        require(apkFile.isFile) { "فایل APK پیدا نشد." }
+        val trimmedUrl = apkUrl.trim()
+        require(trimmedUrl.startsWith("https://")) { "آدرس دانلود APK باید با https:// شروع شود." }
+
+        val archiveInfo = context.packageManager.getPackageArchiveInfo(apkFile.absolutePath, 0)
+            ?: throw IllegalStateException("فایل انتخاب‌شده یک APK معتبر نیست.")
+        val packageName = archiveInfo.packageName
+        val access = when (packageName) {
+            "com.example.bookapp" -> "admin"
+            "com.example.bookapp.viewer" -> "viewer"
+            else -> throw IllegalStateException("نام پکیج این APK ($packageName) با هیچ‌کدام از نسخه‌های این برنامه مطابقت ندارد.")
+        }
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            archiveInfo.longVersionCode.toInt()
+        } else {
+            archiveInfo.versionCode
+        }
+        val versionName = archiveInfo.versionName ?: versionCode.toString()
+        val apkSha256 = sha256(apkFile)
+
         val dir = File(context.filesDir, "updates").apply { mkdirs() }
-        val file = File(dir, MANIFEST_ASSET)
-        val apk = File(apkFile)
-        val apkSha256 = if (apk.isFile) sha256(apk) else ""
+        val outFile = File(dir, "update-$access-$versionCode.json")
         val json = JSONObject().apply {
-            put("appName", if (com.example.bookapp.BuildConfig.PUBLIC_VIEWER) "Tazieh Viewer" else "Tazieh Admin")
-            put("versionCode", versionCode); put("versionName", versionName); put("minSupportedVersion", minSupportedVersion)
-            put("forceUpdate", forceUpdate); put("apkFile", apkFile); put("sha256", apkSha256); put("releaseDate", java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()))
+            put("packageName", packageName)
+            put("access", access)
+            put("versionCode", versionCode)
+            put("versionName", versionName)
+            put("apkUrl", trimmedUrl)
+            put("sha256", apkSha256)
+            put("forceUpdate", forceUpdate)
+            put("minSupportedVersion", minSupportedVersion)
+            put("releaseDate", java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()))
             put("releaseNotes", JSONArray(releaseNotes))
         }
-        file.writeText(json.toString(2), Charsets.UTF_8); return file
+        val jsonText = json.toString(2)
+        outFile.writeText(jsonText, Charsets.UTF_8)
+        GeneratedManifest(outFile, jsonText, packageName, access, versionCode, versionName, apkSha256)
     }
 
     /**
