@@ -1,6 +1,12 @@
-# آدرس پایه سرور بروزرسانی مدیر
-# فایل واقعی را می‌توانید با نام update-servers.properties بسازید یا همین مقادیر را در local.properties قرار دهید.
-UPDATE_SERVER_ADMIN_URL=https://example.com/tazieh/admin
+# آدرس(های) سرور بروزرسانی مدیر — چند آدرس را با کاما جدا کنید (اولی اصلی، بقیه پشتیبان).
+# هرگز این آدرس را به همان ریپازیتوری سورس اصلی اشاره ندهید (به README_SETTINGS_UPDATE_FIX_FA.md
+# و UPDATE_SERVER_SETUP_FA.md رجوع کنید) — از یک ریپازیتوری/میزبان کاملاً جدا و بی‌ربط استفاده کنید
+# که فقط شامل update.json و خود APK باشد.
+UPDATE_SERVER_ADMIN_URLS=https://example.com/tazieh/admin
 
-# آدرس پایه سرور بروزرسانی کاربر
-UPDATE_SERVER_VIEWER_URL=https://example.com/tazieh/user
+# آدرس(های) سرور بروزرسانی کاربر (Viewer)
+UPDATE_SERVER_VIEWER_URLS=https://example.com/tazieh/user
+
+# --- کلید مفرد قدیمی (سازگاری با نسخه‌های قبلی؛ اگر از بالا استفاده می‌کنید لازم نیست) ---
+# UPDATE_SERVER_ADMIN_URL=https://example.com/tazieh/admin
+# UPDATE_SERVER_VIEWER_URL=https://example.com/tazieh/user
