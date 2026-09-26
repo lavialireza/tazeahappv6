@@ -25,22 +25,37 @@ run {
 fun signingProp(key: String): String? =
     (localProps.getProperty(key) ?: System.getenv(key))?.takeIf { it.isNotBlank() }
 
-// آدرس سرور بروزرسانی برای هر نسخه جداست و بدون تغییر کد Kotlin قابل تغییر است.
-// اولویت: -P هنگام Build، سپس local.properties، و در نهایت مقدار پیش‌فرض.
-fun updateServerProp(key: String, defaultValue: String): String =
-    (providers.gradleProperty(key).orNull
-        ?: localProps.getProperty(key)
-        ?: updateServerProps.getProperty(key)
-        ?: defaultValue).trim().removeSuffix("/")
+// آدرس(های) سرور بروزرسانی برای هر نسخه جداست و بدون تغییر کد Kotlin قابل تغییر است.
+// می‌توانید چند آدرس پشتیبان با کاما جدا از هم بدهید (اولین آدرسی که در گوشی کاربر
+// جواب داد استفاده می‌شود؛ اگر یکی از دسترس خارج شد، بعدی امتحان می‌شود).
+// اولویت خواندن مقدار: -P هنگام Build، سپس local.properties، و در نهایت
+// update-servers.properties؛ کلید جمع (…_URLS) در اولویت است، برای سازگاری با
+// تنظیمات قبلی کلید مفرد (…_URL) هم پشتیبانی می‌شود.
+fun updateServerUrlsProp(pluralKey: String, singularKey: String, defaultValue: String): List<String> {
+    val raw = providers.gradleProperty(pluralKey).orNull
+        ?: localProps.getProperty(pluralKey)
+        ?: updateServerProps.getProperty(pluralKey)
+        ?: providers.gradleProperty(singularKey).orNull
+        ?: localProps.getProperty(singularKey)
+        ?: updateServerProps.getProperty(singularKey)
+        ?: defaultValue
+    return raw.split(",", "\n")
+        .map { it.trim().removeSuffix("/") }
+        .filter { it.isNotBlank() }
+}
 
-val adminUpdateServerUrl = updateServerProp(
-    "UPDATE_SERVER_ADMIN_URL",
+val adminUpdateServerUrls = updateServerUrlsProp(
+    "UPDATE_SERVER_ADMIN_URLS", "UPDATE_SERVER_ADMIN_URL",
     "https://example.com/tazieh/admin"
 )
-val viewerUpdateServerUrl = updateServerProp(
-    "UPDATE_SERVER_VIEWER_URL",
+val viewerUpdateServerUrls = updateServerUrlsProp(
+    "UPDATE_SERVER_VIEWER_URLS", "UPDATE_SERVER_VIEWER_URL",
     "https://example.com/tazieh/user"
 )
+// جداکننده‌ی داخلی بین چند آدرس؛ چون خود آدرس‌ها کاما ندارند از "|" استفاده شده
+// تا با split ساده در Kotlin بدون ابهام جدا شوند.
+val adminUpdateServerUrlsJoined = adminUpdateServerUrls.joinToString("|")
+val viewerUpdateServerUrlsJoined = viewerUpdateServerUrls.joinToString("|")
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
@@ -55,7 +70,7 @@ android {
             dimension = "access"
             applicationId = "com.example.bookapp"
             buildConfigField("Boolean", "PUBLIC_VIEWER", "false")
-            buildConfigField("String", "UPDATE_SERVER_URL", "\"${adminUpdateServerUrl}\"")
+            buildConfigField("String", "UPDATE_SERVER_URLS", "\"${adminUpdateServerUrlsJoined}\"")
             buildConfigField("String", "SYNC_SERVER_URL", "\"\"")
             manifestPlaceholders["appLabel"] = "تعزیه و شبیه‌خوانی — مدیر"
         }
@@ -63,7 +78,7 @@ android {
             dimension = "access"
             applicationId = "com.example.bookapp.viewer"
             buildConfigField("Boolean", "PUBLIC_VIEWER", "true")
-            buildConfigField("String", "UPDATE_SERVER_URL", "\"${viewerUpdateServerUrl}\"")
+            buildConfigField("String", "UPDATE_SERVER_URLS", "\"${viewerUpdateServerUrlsJoined}\"")
             buildConfigField("String", "SYNC_SERVER_URL", "\"\"")
             manifestPlaceholders["appLabel"] = "تعزیه و شبیه‌خوانی"
         }
