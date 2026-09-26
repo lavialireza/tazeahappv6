@@ -71,88 +71,109 @@ object UpdateHelper {
     suspend fun checkForUpdate(currentVersionCode: Int): Result<UpdateInfo?> = withContext(Dispatchers.IO) {
         runCatching {
             // برنامه در حالت عادی آفلاین است. فقط با زدن «بررسی بروزرسانی»
-            // به سرور ثابت همان Flavor وصل می‌شود.
-            val baseUrl = BuildConfig.UPDATE_SERVER_URL.trim().removeSuffix("/")
-            require(baseUrl.startsWith("https://")) {
-                "آدرس سرور بروزرسانی باید با https:// شروع شود. آدرس فعلی: $baseUrl"
+            // به آدرس‌های سرور همان Flavor وصل می‌شود. اگر چند آدرس پشتیبان
+            // تنظیم شده باشد، به‌ترتیب امتحان می‌شوند تا یکی جواب بدهد؛ آدرس
+            // بعدی فقط وقتی امتحان می‌شود که آدرس قبلی در دسترس نبود یا خطا داد.
+            val baseUrls = BuildConfig.UPDATE_SERVER_URLS.split("|")
+                .map { it.trim().removeSuffix("/") }
+                .filter { it.isNotBlank() }
+            require(baseUrls.isNotEmpty()) { "هیچ آدرس سرور بروزرسانی تنظیم نشده است." }
+
+            var lastError: Throwable? = null
+            for (baseUrl in baseUrls) {
+                val result = runCatching { fetchManifest(baseUrl, currentVersionCode) }
+                if (result.isSuccess) {
+                    return@runCatching result.getOrThrow()
+                }
+                lastError = result.exceptionOrNull()
             }
-            val manifestUrl = "$baseUrl/update.json"
-            val connection = (URL(manifestUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 10000
-                readTimeout = 15000
-                instanceFollowRedirects = true
-                setRequestProperty("Accept", "application/json")
-                setRequestProperty("User-Agent", "Tazieh-Android-Updater")
-                setRequestProperty("Cache-Control", "no-cache, no-store")
-                setRequestProperty("Pragma", "no-cache")
+            // اگر به اینجا رسیدیم یعنی هیچ‌کدام از آدرس‌ها جواب نداد.
+            throw lastError ?: IllegalStateException("بررسی بروزرسانی از هیچ‌کدام از آدرس‌های تنظیم‌شده ممکن نشد.")
+        }
+    }
+
+    /** یک آدرس سرور مشخص را بررسی می‌کند؛ در صورت هر خطا (شبکه، اعتبارسنجی و...) Exception پرتاب می‌کند
+     * تا checkForUpdate بتواند آدرس پشتیبان بعدی را امتحان کند. */
+    private fun fetchManifest(baseUrl: String, currentVersionCode: Int): UpdateInfo? {
+        require(baseUrl.startsWith("https://")) {
+            "آدرس سرور بروزرسانی باید با https:// شروع شود. آدرس فعلی: $baseUrl"
+        }
+        val manifestUrl = "$baseUrl/update.json"
+        val connection = (URL(manifestUrl).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 10000
+            readTimeout = 15000
+            instanceFollowRedirects = true
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("User-Agent", "Tazieh-Android-Updater")
+            setRequestProperty("Cache-Control", "no-cache, no-store")
+            setRequestProperty("Pragma", "no-cache")
+        }
+        try {
+            if (connection.responseCode !in 200..299) {
+                throw IllegalStateException("بررسی بروزرسانی ناموفق بود: ${connection.responseCode}")
             }
-            try {
-                if (connection.responseCode !in 200..299) {
-                    throw IllegalStateException("بررسی بروزرسانی ناموفق بود: ${connection.responseCode}")
-                }
-                require(connection.url.protocol.equals("https", ignoreCase = true)) {
-                    "سرور بروزرسانی به اتصال امن HTTPS منتقل نشد؛ بروزرسانی متوقف شد."
-                }
-                val json = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
-                val expectedPackage = if (BuildConfig.PUBLIC_VIEWER) {
-                    "com.example.bookapp.viewer"
-                } else {
-                    "com.example.bookapp"
-                }
-                val manifestPackage = json.optString("packageName", expectedPackage)
-                if (manifestPackage != expectedPackage) {
-                    throw IllegalStateException("این سرور برای نسخه دیگری از برنامه تنظیم شده است.")
-                }
-
-                val expectedAccess = if (BuildConfig.PUBLIC_VIEWER) "viewer" else "admin"
-                val access = json.optString("access", expectedAccess).lowercase()
-                if (access != expectedAccess) {
-                    throw IllegalStateException("سرور بروزرسانی مربوط به ${if (BuildConfig.PUBLIC_VIEWER) "User" else "Admin"} نیست.")
-                }
-
-                val buildNumber = json.optInt("versionCode", 0)
-                if (buildNumber <= 0) throw IllegalStateException("versionCode در update.json معتبر نیست.")
-                if (buildNumber <= currentVersionCode) return@runCatching null
-
-                val apkUrlRaw = json.optString("apkUrl").trim()
-                if (apkUrlRaw.isBlank()) {
-                    throw IllegalStateException("در update.json آدرس APK مشخص نشده است.")
-                }
-                val apkUrl = if (apkUrlRaw.startsWith("https://") || apkUrlRaw.startsWith("http://")) {
-                    apkUrlRaw
-                } else {
-                    URL(URL("$baseUrl/"), apkUrlRaw.removePrefix("/")).toString()
-                }
-                require(apkUrl.startsWith("https://")) { "آدرس APK بروزرسانی باید امن (HTTPS) باشد." }
-                val sha256 = json.optString("sha256").trim().lowercase()
-                require(Regex("^[0-9a-f]{64}$").matches(sha256)) {
-                    "در update.json مقدار SHA-256 معتبر برای APK وجود ندارد؛ بروزرسانی متوقف شد."
-                }
-
-                val notes = mutableListOf<String>()
-                val notesArray = json.optJSONArray("releaseNotes")
-                if (notesArray != null) {
-                    for (i in 0 until notesArray.length()) {
-                        notesArray.optString(i).takeIf { it.isNotBlank() }?.let(notes::add)
-                    }
-                }
-
-                UpdateInfo(
-                    buildNumber = buildNumber,
-                    tagName = json.optString("tagName", "server-$buildNumber"),
-                    downloadUrl = apkUrl,
-                    isReleaseApk = true,
-                    versionName = json.optString("versionName", "build$buildNumber"),
-                    minSupportedVersion = json.optInt("minSupportedVersion", 0),
-                    forceUpdate = json.optBoolean("forceUpdate", false),
-                    releaseDate = json.optString("releaseDate", ""),
-                    releaseNotes = notes,
-                    sha256 = sha256
-                )
-            } finally {
-                connection.disconnect()
+            require(connection.url.protocol.equals("https", ignoreCase = true)) {
+                "سرور بروزرسانی به اتصال امن HTTPS منتقل نشد؛ بروزرسانی متوقف شد."
             }
+            val json = JSONObject(connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() })
+            val expectedPackage = if (BuildConfig.PUBLIC_VIEWER) {
+                "com.example.bookapp.viewer"
+            } else {
+                "com.example.bookapp"
+            }
+            val manifestPackage = json.optString("packageName", expectedPackage)
+            if (manifestPackage != expectedPackage) {
+                throw IllegalStateException("این سرور برای نسخه دیگری از برنامه تنظیم شده است.")
+            }
+
+            val expectedAccess = if (BuildConfig.PUBLIC_VIEWER) "viewer" else "admin"
+            val access = json.optString("access", expectedAccess).lowercase()
+            if (access != expectedAccess) {
+                throw IllegalStateException("سرور بروزرسانی مربوط به ${if (BuildConfig.PUBLIC_VIEWER) "User" else "Admin"} نیست.")
+            }
+
+            val buildNumber = json.optInt("versionCode", 0)
+            if (buildNumber <= 0) throw IllegalStateException("versionCode در update.json معتبر نیست.")
+            if (buildNumber <= currentVersionCode) return null
+
+            val apkUrlRaw = json.optString("apkUrl").trim()
+            if (apkUrlRaw.isBlank()) {
+                throw IllegalStateException("در update.json آدرس APK مشخص نشده است.")
+            }
+            val apkUrl = if (apkUrlRaw.startsWith("https://") || apkUrlRaw.startsWith("http://")) {
+                apkUrlRaw
+            } else {
+                URL(URL("$baseUrl/"), apkUrlRaw.removePrefix("/")).toString()
+            }
+            require(apkUrl.startsWith("https://")) { "آدرس APK بروزرسانی باید امن (HTTPS) باشد." }
+            val sha256 = json.optString("sha256").trim().lowercase()
+            require(Regex("^[0-9a-f]{64}$").matches(sha256)) {
+                "در update.json مقدار SHA-256 معتبر برای APK وجود ندارد؛ بروزرسانی متوقف شد."
+            }
+
+            val notes = mutableListOf<String>()
+            val notesArray = json.optJSONArray("releaseNotes")
+            if (notesArray != null) {
+                for (i in 0 until notesArray.length()) {
+                    notesArray.optString(i).takeIf { it.isNotBlank() }?.let(notes::add)
+                }
+            }
+
+            return UpdateInfo(
+                buildNumber = buildNumber,
+                tagName = json.optString("tagName", "server-$buildNumber"),
+                downloadUrl = apkUrl,
+                isReleaseApk = true,
+                versionName = json.optString("versionName", "build$buildNumber"),
+                minSupportedVersion = json.optInt("minSupportedVersion", 0),
+                forceUpdate = json.optBoolean("forceUpdate", false),
+                releaseDate = json.optString("releaseDate", ""),
+                releaseNotes = notes,
+                sha256 = sha256
+            )
+        } finally {
+            connection.disconnect()
         }
     }
 
