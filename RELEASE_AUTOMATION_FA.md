@@ -55,6 +55,15 @@ base64 -w0 release-key.jks > release-key.b64.txt
 
 اگر این چهار مورد را تنظیم نکنید، Viewer همچنان با همان کلید Admin امضا می‌شود (رفتار قبلی، بدون هیچ تغییری لازم).
 
+### کلید امضای Policy دسترسی (RSA — جایگزین HMAC قدیمی)
+
+| نوع | نام | مقدار |
+|---|---|---|
+| Secret | `ADMIN_POLICY_PRIVATE_KEY` | خروجی Base64 کلید خصوصی RSA (فقط برای build نسخه Admin استفاده می‌شود) |
+| Variable | `POLICY_PUBLIC_KEY` | خروجی Base64 کلید عمومی RSA (در هر دو Flavor امن است، چون فقط برای تأیید امضا به کار می‌رود) |
+
+روش ساخت این جفت‌کلید در `local.properties.example` توضیح داده شده (با `openssl`، یک‌بار روی کامپیوتر خودتان). کلید خصوصی هرگز نباید در گیت commit شود.
+
 **ساخت `UPDATES_REPO_TOKEN`:** یک Fine-grained PAT بسازید (GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens) که فقط روی ریپازیتوری `tazieh-updates` دسترسی `Contents: Read and write` داشته باشد — نه روی کل حساب کاربری، تا اگر این توکن لو رفت، هیچ دسترسی به سورس اصلی ندهد.
 
 ### تب Variables (مقادیر غیرحساس):

@@ -10,3 +10,22 @@ RELEASE_STORE_FILE=/absolute/path/to/release.keystore
 RELEASE_STORE_PASSWORD=your-store-password
 RELEASE_KEY_ALIAS=taziehapp
 RELEASE_KEY_PASSWORD=your-key-password
+
+# اختیاری: کلید امضای جدا برای Viewer (اگر نگذارید، Viewer با همان کلید بالا امضا می‌شود)
+# RELEASE_VIEWER_STORE_FILE=/absolute/path/to/release-viewer.keystore
+# RELEASE_VIEWER_STORE_PASSWORD=your-viewer-store-password
+# RELEASE_VIEWER_KEY_ALIAS=taziehappviewer
+# RELEASE_VIEWER_KEY_PASSWORD=your-viewer-key-password
+
+# --------------------------------------------------------------------------
+# کلید امضای Policy دسترسی Viewer (RSA — جایگزین HMAC قدیمی).
+# یک‌بار بسازید (روی کامپیوتر خودتان، هرگز این خروجی‌ها را commit نکنید):
+#
+#   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out policy_private.pem
+#   openssl pkey -in policy_private.pem -outform DER | base64 -w0 > policy_private.b64.txt
+#   openssl pkey -in policy_private.pem -pubout -outform DER | base64 -w0 > policy_public.b64.txt
+#
+# محتوای policy_public.b64.txt را برای هر دو مقدار زیر بگذارید (باید یکسان باشند):
+POLICY_PUBLIC_KEY=paste-content-of-policy_public.b64.txt
+# محتوای policy_private.b64.txt را فقط اینجا بگذارید (هرگز در Viewer/کد/گیت):
+ADMIN_POLICY_PRIVATE_KEY=paste-content-of-policy_private.b64.txt
