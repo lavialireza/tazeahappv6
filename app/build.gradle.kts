@@ -57,6 +57,14 @@ val viewerUpdateServerUrls = updateServerUrlsProp(
 val adminUpdateServerUrlsJoined = adminUpdateServerUrls.joinToString("|")
 val viewerUpdateServerUrlsJoined = viewerUpdateServerUrls.joinToString("|")
 
+val storeFilePath = signingProp("RELEASE_STORE_FILE")
+val hasReleaseSigning = storeFilePath != null
+// کلید امضای اختیاری و جداگانه برای Viewer (توصیه امنیتی: Admin و Viewer با دو
+// کلید متفاوت امضا شوند تا اگر یکی لو رفت، دیگری مستقل بماند). اگر تنظیم نشود،
+// Viewer همچنان با همان کلید Admin امضا می‌شود (رفتار قبلی، سازگار به عقب).
+val viewerStoreFilePath = signingProp("RELEASE_VIEWER_STORE_FILE")
+val hasViewerReleaseSigning = viewerStoreFilePath != null
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -64,6 +72,34 @@ ksp {
 android {
     namespace = "com.example.bookapp"
     flavorDimensions += "access"
+
+    signingConfigs {
+        // امضای ثابت فقط برای Debug/آزمایش CI است تا APK هر build بتواند
+        // روی build آزمایشی قبلی همان flavor نصبِ بروزرسانی شود. این کلید
+        // برای انتشار رسمی/Play Store نیست.
+        create("testDebug") {
+            storeFile = rootProject.file("ci/tazieh-test-signing.jks")
+            storePassword = "tazieh-test-2026"
+            keyAlias = "taziehTest"
+            keyPassword = "tazieh-test-2026"
+        }
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(storeFilePath!!)
+                storePassword = signingProp("RELEASE_STORE_PASSWORD")
+                keyAlias = signingProp("RELEASE_KEY_ALIAS")
+                keyPassword = signingProp("RELEASE_KEY_PASSWORD")
+            }
+        }
+        if (hasViewerReleaseSigning) {
+            create("releaseViewer") {
+                storeFile = file(viewerStoreFilePath!!)
+                storePassword = signingProp("RELEASE_VIEWER_STORE_PASSWORD")
+                keyAlias = signingProp("RELEASE_VIEWER_KEY_ALIAS")
+                keyPassword = signingProp("RELEASE_VIEWER_KEY_PASSWORD")
+            }
+        }
+    }
 
     productFlavors {
         create("admin") {
@@ -73,6 +109,12 @@ android {
             buildConfigField("String", "UPDATE_SERVER_URLS", "\"${adminUpdateServerUrlsJoined}\"")
             buildConfigField("String", "SYNC_SERVER_URL", "\"\"")
             manifestPlaceholders["appLabel"] = "تعزیه و شبیه‌خوانی — مدیر"
+            // امضای Release این flavor؛ در buildTypes.release عمداً تنظیم نمی‌شود
+            // چون سطح buildType روی سطح flavor اولویت دارد و امضای جدا هر
+            // flavor را بی‌اثر می‌کرد.
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         create("viewer") {
             dimension = "access"
@@ -81,6 +123,11 @@ android {
             buildConfigField("String", "UPDATE_SERVER_URLS", "\"${viewerUpdateServerUrlsJoined}\"")
             buildConfigField("String", "SYNC_SERVER_URL", "\"\"")
             manifestPlaceholders["appLabel"] = "تعزیه و شبیه‌خوانی"
+            if (hasViewerReleaseSigning) {
+                signingConfig = signingConfigs.getByName("releaseViewer")
+            } else if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileSdk = 34
@@ -137,29 +184,6 @@ android {
         versionName = "1.0-build$effectiveBuildNumber+$gitShortSha"
     }
 
-    val storeFilePath = signingProp("RELEASE_STORE_FILE")
-    val hasReleaseSigning = storeFilePath != null
-
-    signingConfigs {
-        // امضای ثابت فقط برای Debug/آزمایش CI است تا APK هر build بتواند
-        // روی build آزمایشی قبلی همان flavor نصبِ بروزرسانی شود. این کلید
-        // برای انتشار رسمی/Play Store نیست.
-        create("testDebug") {
-            storeFile = rootProject.file("ci/tazieh-test-signing.jks")
-            storePassword = "tazieh-test-2026"
-            keyAlias = "taziehTest"
-            keyPassword = "tazieh-test-2026"
-        }
-        if (hasReleaseSigning) {
-            create("release") {
-                storeFile = file(storeFilePath!!)
-                storePassword = signingProp("RELEASE_STORE_PASSWORD")
-                keyAlias = signingProp("RELEASE_KEY_ALIAS")
-                keyPassword = signingProp("RELEASE_KEY_PASSWORD")
-            }
-        }
-    }
-
     buildTypes {
         debug {
             // امضای ثابت برای زنجیره بروزرسانی APKهای آزمایشی CI.
@@ -169,13 +193,12 @@ android {
             // انتشار واقعی: کد Viewer در Release با R8 کوچک‌سازی و مبهم‌سازی می‌شود.
             isMinifyEnabled = true
             isShrinkResources = true
-            // اگر کلید امضا تنظیم نشده باشد (مثلاً روی CI بدون secret)، بدون امضا
-            // ساخته می‌شود تا Build نشکند؛ چنین APK ای فقط برای تست داخلی قابل‌نصب است،
-            // نه انتشار در فروشگاه. برای انتشار واقعی، local.properties را طبق
-            // DEVELOPER_GUIDE.md پر کنید.
-            if (hasReleaseSigning) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            // امضای Release هر flavor در productFlavors بالا تنظیم شده (نه اینجا)
+            // تا Admin و Viewer بتوانند کلید جدا داشته باشند — اگر اینجا هم ست
+            // می‌شد، چون سطح buildType اولویت بالاتری از flavor دارد، امضای
+            // جداگانه‌ی Viewer را بی‌اثر می‌کرد. اگر هیچ کلیدی تنظیم نشده باشد
+            // (مثلاً CI بدون secret)، APK بدون امضا ساخته می‌شود تا Build نشکند؛
+            // چنین APK ای فقط برای تست داخلی قابل‌نصب است، نه انتشار در فروشگاه.
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
