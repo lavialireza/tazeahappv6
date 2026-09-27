@@ -65,6 +65,13 @@ val hasReleaseSigning = storeFilePath != null
 val viewerStoreFilePath = signingProp("RELEASE_VIEWER_STORE_FILE")
 val hasViewerReleaseSigning = viewerStoreFilePath != null
 
+// کلید عمومی/خصوصی RSA برای امضای Policy دسترسی Viewer (جایگزین HMAC قدیمی).
+// کلید عمومی در هر دو Flavor امن است (فقط برای «تأیید» به کار می‌رود)؛ کلید
+// خصوصی فقط باید برای Admin تنظیم شود و هرگز نباید commit شود — به
+// RELEASE_AUTOMATION_FA.md مراجعه کنید.
+val policyPublicKeyBase64 = signingProp("POLICY_PUBLIC_KEY") ?: ""
+val policyPrivateKeyBase64 = signingProp("ADMIN_POLICY_PRIVATE_KEY") ?: ""
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -108,6 +115,8 @@ android {
             buildConfigField("Boolean", "PUBLIC_VIEWER", "false")
             buildConfigField("String", "UPDATE_SERVER_URLS", "\"${adminUpdateServerUrlsJoined}\"")
             buildConfigField("String", "SYNC_SERVER_URL", "\"\"")
+            // کلید خصوصی امضای Policy فقط برای Admin — هرگز در Viewer تعریف نمی‌شود.
+            buildConfigField("String", "POLICY_PRIVATE_KEY", "\"$policyPrivateKeyBase64\"")
             manifestPlaceholders["appLabel"] = "تعزیه و شبیه‌خوانی — مدیر"
             // امضای Release این flavor؛ در buildTypes.release عمداً تنظیم نمی‌شود
             // چون سطح buildType روی سطح flavor اولویت دارد و امضای جدا هر
@@ -182,6 +191,8 @@ android {
         versionCode = effectiveBuildNumber
         // شماره نسخه برای هر دو flavor یکسان می‌ماند؛ تفاوت فقط در سطح دسترسی است.
         versionName = "1.0-build$effectiveBuildNumber+$gitShortSha"
+        // کلید عمومی امضای Policy — یکسان و امن برای هر دو Flavor.
+        buildConfigField("String", "POLICY_PUBLIC_KEY", "\"$policyPublicKeyBase64\"")
     }
 
     buildTypes {
