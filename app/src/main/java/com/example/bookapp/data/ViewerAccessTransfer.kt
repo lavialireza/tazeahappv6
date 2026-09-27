@@ -2,62 +2,55 @@ package com.example.bookapp.data
 
 import android.content.Context
 import android.content.Intent
-import androidx.core.content.FileProvider
+import android.util.Base64
 import java.io.InputStream
-import java.io.OutputStream
+import java.security.KeyFactory
+import java.security.PublicKey
+import java.security.Signature
+import java.security.spec.X509EncodedKeySpec
 import org.json.JSONObject
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 
-/** انتقال امنِ سیاست دسترسی بین Admin و Viewer؛ بدون سرور. */
+/**
+ * انتقال امنِ سیاست دسترسی بین Admin و Viewer؛ بدون سرور.
+ *
+ * امضا با کلید خصوصی RSA انجام می‌شود که فقط در app/src/admin/java
+ * (کلاس ViewerAccessSigner) وجود دارد — هرگز در APK نسخه Viewer کامپایل
+ * نمی‌شود. اینجا (مشترک بین هر دو Flavor) فقط با کلید عمومی اعتبارسنجی
+ * می‌شود؛ کلید عمومی را می‌توان آزادانه در هر دو APK قرار داد چون فقط
+ * برای «تأیید» به‌کار می‌رود، نه «ساخت» امضای جدید.
+ *
+ * قبلاً این فایل از یک HMAC با راز مشترک استفاده می‌کرد که چون هم در Admin
+ * و هم در Viewer وجود داشت، مهندسی‌معکوسِ Viewer می‌توانست همان راز را
+ * استخراج و Policy جعلی معتبر بسازد. با امضای نامتقارن، حتی مهندسی‌معکوسِ
+ * کامل Viewer فقط کلید عمومی را نشان می‌دهد که برای جعل Policy جدید کافی
+ * نیست.
+ */
 object ViewerAccessTransfer {
-    private const val SCHEMA = 1
-    private const val TARGET_PUBLIC = "*"
-    // این راز فقط برای اعتبارسنجی فایل سیاست است؛ امنیت مطلق/DRM نیست.
-    private const val SHARED_SECRET = "TaziehAccessPolicy-2026-v1"
+    internal const val SCHEMA = 1
+    internal const val TARGET_PUBLIC = "*"
     private const val KEY_LAST_IMPORTED_VERSION = "last_imported_policy_version"
     private const val KEY_LAST_IMPORTED_VERSIONS = "last_imported_policy_versions"
 
-    private fun sign(payload: String): String {
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(SHARED_SECRET.toByteArray(Charsets.UTF_8), "HmacSHA256"))
-        return mac.doFinal(payload.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    private val publicKey: PublicKey? by lazy {
+        val b64 = com.example.bookapp.BuildConfig.POLICY_PUBLIC_KEY
+        if (b64.isBlank()) return@lazy null
+        runCatching {
+            val der = Base64.decode(b64, Base64.NO_WRAP)
+            KeyFactory.getInstance("RSA").generatePublic(X509EncodedKeySpec(der))
+        }.getOrNull()
     }
 
-    fun buildPolicyJson(context: Context, targetInstallationId: String): String {
-        val rawTarget = targetInstallationId.trim()
-        val target = if (rawTarget.isBlank()) TARGET_PUBLIC else rawTarget.uppercase(java.util.Locale.US)
-        val specialUser = if (target == TARGET_PUBLIC) null else
-            ViewerAccessPolicy.getSpecialUsers(context).firstOrNull { it.installationId.equals(target, ignoreCase = true) }
-        val permissions = if (target == TARGET_PUBLIC) {
-            ViewerAccessPolicy.getPublicPermissions(context)
-        } else {
-            specialUser?.permissions ?: throw IllegalArgumentException("کاربر موردنظر پیدا نشد.")
-        }
-        val root = JSONObject()
-            .put("schema", SCHEMA)
-            .put("targetInstallationId", target)
-            .put("policyVersion", ViewerAccessPolicy.getPolicyVersion(context, target))
-            .put("issuedAt", System.currentTimeMillis())
-            .put("expiresAt", if (target == TARGET_PUBLIC) JSONObject.NULL else specialUser?.expiresAt ?: JSONObject.NULL)
-            .put("profile", if (target == TARGET_PUBLIC) ViewerAccessPolicy.PROFILE_PUBLIC else specialUser?.profile ?: ViewerAccessPolicy.PROFILE_CUSTOM)
-        .put("enabled", if (target == TARGET_PUBLIC) true else specialUser?.enabled ?: false)
-            .put("policyFingerprint", if (target == TARGET_PUBLIC) "" else ViewerAccessPolicy.policyFingerprint(specialUser ?: error("کاربر موردنظر پیدا نشد.")))
-        val p = JSONObject(); ViewerAccessPolicy.permissionLabels.keys.forEach { p.put(it, permissions[it] == true) }
-        root.put("permissions", p)
-        val unsigned = root.toString()
-        return JSONObject().put("schema", SCHEMA).put("payload", root).put("signature", sign(unsigned)).toString(2)
-    }
-
-    fun writePolicy(context: Context, targetInstallationId: String, output: OutputStream) {
-        output.use { it.write(buildPolicyJson(context, targetInstallationId).toByteArray(Charsets.UTF_8)) }
-    }
-
-    /** فایل سیاست را در cache آماده می‌کند تا Admin بتواند آن را مستقیماً با Viewer به اشتراک بگذارد. */
-    fun createShareUri(context: Context, targetInstallationId: String): android.net.Uri {
-        val file = java.io.File(context.cacheDir, "viewer-access-share.json")
-        file.outputStream().use { writePolicy(context, targetInstallationId, it) }
-        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    internal fun verify(payload: String, signatureHex: String): Boolean {
+        val key = publicKey ?: return false
+        return runCatching {
+            val sig = Signature.getInstance("SHA256withRSA")
+            sig.initVerify(key)
+            sig.update(payload.toByteArray(Charsets.UTF_8))
+            val clean = signatureHex.trim()
+            if (clean.length % 2 != 0) return false
+            val sigBytes = ByteArray(clean.length / 2) { i -> clean.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+            sig.verify(sigBytes)
+        }.getOrDefault(false)
     }
 
     fun importPolicy(context: Context, input: InputStream): Result<String> = runCatching {
@@ -66,7 +59,7 @@ object ViewerAccessTransfer {
         require(envelope.optInt("schema", -1) == SCHEMA) { "نسخه فایل سیاست پشتیبانی نمی‌شود." }
         val payload = envelope.getJSONObject("payload")
         val signature = envelope.optString("signature")
-        require(signature == sign(payload.toString())) { "امضای سیاست معتبر نیست." }
+        require(verify(payload.toString(), signature)) { "امضای سیاست معتبر نیست." }
         val rawTarget = payload.optString("targetInstallationId").trim()
         val target = if (rawTarget == TARGET_PUBLIC) TARGET_PUBLIC else rawTarget.uppercase(java.util.Locale.US)
         val ownId = ViewerAccessPolicy.installationId(context).uppercase(java.util.Locale.US)
