@@ -580,9 +580,20 @@ fun SettingsScreen(
                             Text("بروزرسانی محتوا", style = MaterialTheme.typography.bodyLarge)
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "اگر محتوای جدیدی به گیت‌هاب اضافه شده، با این دکمه بدون نیاز به نصب دوباره اپ، محتوا به‌روز می‌شود (نیاز به اینترنت دارد).",
+                                "اگر محتوای جدیدی روی آدرس زیر منتشر شده، با این دکمه بدون نیاز به نصب دوباره اپ، محتوا به‌روز می‌شود (نیاز به اینترنت دارد).",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            var contentSourceUrlInput by remember { mutableStateOf(com.example.bookapp.data.Prefs.getContentSourceUrl(context)) }
+                            OutlinedTextField(
+                                value = contentSourceUrlInput,
+                                onValueChange = {
+                                    contentSourceUrlInput = it
+                                    com.example.bookapp.data.Prefs.setContentSourceUrl(context, it)
+                                },
+                                label = { Text("آدرس فایل محتوا (https://...)") },
+                                modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(Modifier.height(12.dp))
                             Button(

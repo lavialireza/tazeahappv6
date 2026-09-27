@@ -14,6 +14,22 @@ object Prefs {
     private const val PREFS_NAME = "app_prefs"
     private const val KEY_DARK_MODE = "dark_mode"
     private const val KEY_FONT_SCALE = "font_scale" // 0.85f=کوچک, 1.0f=متوسط, 1.3f=بزرگ
+    private const val KEY_CONTENT_SOURCE_URL = "content_source_url"
+
+    /**
+     * آدرس دلخواه Admin برای «بروزرسانی محتوا» (کشیدن یک فایل JSON محتوا از یک
+     * آدرس مشخص، بدون نیاز به build جدید). عمداً هیچ مقدار پیش‌فرضی ندارد —
+     * قبلاً این تابع یک آدرس گیت‌هاب متعلق به توسعه‌دهنده را به‌صورت هاردکد در
+     * کد همه Flavorها (از جمله Viewer) حمل می‌کرد که یک نشتی امنیتی/حریم‌خصوصی
+     * غیرضروری بود؛ حالا Admin باید این آدرس را خودش وارد و ذخیره کند.
+     */
+    fun getContentSourceUrl(context: Context): String =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_CONTENT_SOURCE_URL, "").orEmpty()
+
+    fun setContentSourceUrl(context: Context, value: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_CONTENT_SOURCE_URL, value.trim()).apply()
+    }
 
     fun isDarkMode(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

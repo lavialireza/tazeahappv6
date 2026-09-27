@@ -459,7 +459,7 @@ fun AppNavigation(
                     if (result.isSuccess && publicViewer) viewerPermissions = ViewerAccessPolicy.getEffectivePermissions(context)
                     result
                 },
-                onSyncContent = { syncRemoteContent(db) },
+                onSyncContent = { syncRemoteContent(db, com.example.bookapp.data.Prefs.getContentSourceUrl(context)) },
                 onCheckAppUpdate = {
                     val installed = com.example.bookapp.data.UpdateHelper.getInstalledVersion(context)
                     val result = com.example.bookapp.data.UpdateHelper.checkForUpdate(installed.buildNumber)

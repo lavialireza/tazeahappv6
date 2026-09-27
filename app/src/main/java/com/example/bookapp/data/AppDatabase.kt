@@ -210,16 +210,23 @@ private data class FileWithKey(val name: String, val text: String, val key: Stri
 
 suspend fun syncRemoteContent(
     db: AppDatabase,
-    url: String = "https://raw.githubusercontent.com/lavialireza/tazeahappv-1/main/app/src/admin/assets/content/001_sample.json"
+    url: String
 ): Result<Unit> {
     if (com.example.bookapp.BuildConfig.PUBLIC_VIEWER) {
         return Result.failure(IllegalStateException("نسخه عمومی اجازه دریافت محتوای آنلاین را ندارد"))
     }
+    val trimmedUrl = url.trim()
+    if (trimmedUrl.isBlank()) {
+        return Result.failure(IllegalStateException("ابتدا آدرس محتوا را در «بروزرسانی محتوا» وارد و ذخیره کنید."))
+    }
+    if (!trimmedUrl.startsWith("https://")) {
+        return Result.failure(IllegalStateException("آدرس محتوا باید با https:// شروع شود."))
+    }
     return try {
-        val jsonText = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { withHttpGet(url) }
+        val jsonText = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { withHttpGet(trimmedUrl) }
         val errors = ContentValidator.validate(jsonText)
         if (errors.isNotEmpty()) return Result.failure(IllegalArgumentException("محتوای آنلاین نامعتبر است: ${errors.take(3).joinToString("؛ ")}"))
-        mergeContentFromJson(db, jsonText, ContentUid.source(url))
+        mergeContentFromJson(db, jsonText, ContentUid.source(trimmedUrl))
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(e)
