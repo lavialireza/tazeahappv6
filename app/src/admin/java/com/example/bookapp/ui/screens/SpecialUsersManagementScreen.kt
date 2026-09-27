@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.ContentCopy
 import android.content.Intent
 import android.net.Uri
-import com.example.bookapp.data.ViewerAccessTransfer
+import com.example.bookapp.data.ViewerAccessSigner
 import com.example.bookapp.data.AccessAuditLog
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -223,7 +223,7 @@ fun SpecialUsersManagementScreen(onBack: () -> Unit) {
                                             val disabled = user.copy(enabled = false, permissions = ViewerAccessPolicy.permissionLabels.keys.associateWith { false })
                                             ViewerAccessPolicy.upsertSpecialUser(context, disabled)
                                             val policyVersion = ViewerAccessPolicy.getPolicyVersion(context, disabled.installationId)
-                                            val uri = ViewerAccessTransfer.createShareUri(context, disabled.installationId)
+                                            val uri = ViewerAccessSigner.createShareUri(context, disabled.installationId)
                                             val intent = Intent(Intent.ACTION_SEND).apply {
                                                 type = "application/json"
                                                 putExtra(Intent.EXTRA_STREAM, uri)
@@ -441,7 +441,7 @@ private fun SpecialUserEditorDialog(
                 TextButton(onClick = {
                     runCatching {
                         val policyVersion = ViewerAccessPolicy.getPolicyVersion(context, user.installationId)
-                        val uri = ViewerAccessTransfer.createShareUri(context, user.installationId)
+                        val uri = ViewerAccessSigner.createShareUri(context, user.installationId)
                         val intent = Intent(Intent.ACTION_SEND).apply {
                             type = "application/json"
                             putExtra(Intent.EXTRA_STREAM, uri)
@@ -564,7 +564,7 @@ private fun BulkPolicySendDialog(
                     users.forEach { user ->
                         try {
                             val policyVersion = ViewerAccessPolicy.getPolicyVersion(context, user.installationId)
-                            val uri = ViewerAccessTransfer.createShareUri(context, user.installationId)
+                            val uri = ViewerAccessSigner.createShareUri(context, user.installationId)
                             val intent = Intent(Intent.ACTION_SEND)
                             intent.type = "application/json"
                             intent.putExtra(Intent.EXTRA_STREAM, uri)

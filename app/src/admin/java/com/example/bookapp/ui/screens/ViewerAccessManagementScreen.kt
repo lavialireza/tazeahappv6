@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bookapp.data.ViewerAccessPolicy
-import com.example.bookapp.data.ViewerAccessTransfer
+import com.example.bookapp.data.ViewerAccessSigner
 import com.example.bookapp.data.AccessAuditLog
 import com.example.bookapp.data.PermissionQa
 import java.text.SimpleDateFormat
@@ -273,7 +273,7 @@ fun ViewerAccessManagementScreen(
     }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) {
-            runCatching { context.contentResolver.openOutputStream(uri)?.let { ViewerAccessTransfer.writePolicy(context, exportTarget, it) } ?: error("فایل خروجی باز نشد.") }
+            runCatching { context.contentResolver.openOutputStream(uri)?.let { ViewerAccessSigner.writePolicy(context, exportTarget, it) } ?: error("فایل خروجی باز نشد.") }
                 .onSuccess { message = "فایل سیاست دسترسی آماده شد؛ آن را به Viewer منتقل کنید." }
                 .onFailure { message = "خروجی سیاست ناموفق بود: ${it.message ?: "خطای نامشخص"}" }
         }
@@ -302,7 +302,7 @@ fun ViewerAccessManagementScreen(
             }
         }
         runCatching {
-            val uri = ViewerAccessTransfer.createShareUri(context, target)
+            val uri = ViewerAccessSigner.createShareUri(context, target)
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/json"
                 putExtra(Intent.EXTRA_STREAM, uri)
@@ -321,7 +321,7 @@ fun ViewerAccessManagementScreen(
         }.onFailure {
             // اگر Viewer نصب نیست، همان فایل را از طریق Share Sheet در اختیار کاربر می‌گذاریم.
             runCatching {
-                val uri = ViewerAccessTransfer.createShareUri(context, target)
+                val uri = ViewerAccessSigner.createShareUri(context, target)
                 val fallback = Intent(Intent.ACTION_SEND).apply {
                     type = "application/json"
                     putExtra(Intent.EXTRA_STREAM, uri)

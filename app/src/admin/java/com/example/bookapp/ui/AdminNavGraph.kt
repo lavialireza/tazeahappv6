@@ -196,7 +196,7 @@ fun NavGraphBuilder.adminOnlyRoutes(
                         busy = true
                         message = null
                         try {
-                            val result = syncRemoteContent(db)
+                            val result = syncRemoteContent(db, com.example.bookapp.data.Prefs.getContentSourceUrl(context))
                             reload()
                             message = result.fold({ "محتوای آنلاین با موفقیت همگام شد." }, { "خطا در همگام‌سازی آنلاین: ${it.message ?: "خطای نامشخص"}" })
                         } finally { busy = false }
