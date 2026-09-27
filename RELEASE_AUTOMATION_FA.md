@@ -45,6 +45,16 @@ base64 -w0 release-key.jks > release-key.b64.txt
 | `RELEASE_KEY_PASSWORD` | رمز کلید |
 | `UPDATES_REPO_TOKEN` | یک Personal Access Token (زیر توضیح داده شده) |
 
+**اختیاری — کلید جدا برای Viewer** (توصیه امنیتی: اگر یکی از دو کلید لو رفت، دیگری مستقل بماند):
+| نام | مقدار |
+|---|---|
+| `RELEASE_VIEWER_KEYSTORE_BASE64` | محتوای Base64 یک keystore **دوم و متفاوت** برای Viewer |
+| `RELEASE_VIEWER_STORE_PASSWORD` | رمز آن keystore |
+| `RELEASE_VIEWER_KEY_ALIAS` | alias آن |
+| `RELEASE_VIEWER_KEY_PASSWORD` | رمز کلید آن |
+
+اگر این چهار مورد را تنظیم نکنید، Viewer همچنان با همان کلید Admin امضا می‌شود (رفتار قبلی، بدون هیچ تغییری لازم).
+
 **ساخت `UPDATES_REPO_TOKEN`:** یک Fine-grained PAT بسازید (GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens) که فقط روی ریپازیتوری `tazieh-updates` دسترسی `Contents: Read and write` داشته باشد — نه روی کل حساب کاربری، تا اگر این توکن لو رفت، هیچ دسترسی به سورس اصلی ندهد.
 
 ### تب Variables (مقادیر غیرحساس):
