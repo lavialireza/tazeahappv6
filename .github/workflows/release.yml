@@ -1,0 +1,228 @@
+name: Release and Publish Update
+
+# اجرای دستی از تب Actions گیت‌هاب (نه خودکار روی هر push)، چون این workflow
+# APK نهایی را با کلید Release واقعی امضا می‌کند و مستقیم به یک ریپازیتوری
+# دیگر (سرور بروزرسانی) push می‌کند — یک عمل انتشار واقعی است، نه تست.
+on:
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: "تغییرات این نسخه (هر خط یک مورد؛ برای هر دو Admin و Viewer یکسان است)"
+        required: false
+        default: ""
+      force_update:
+        description: "این بروزرسانی اجباری باشد؟"
+        required: true
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+      min_supported_version:
+        description: "حداقل versionCode مجاز (0 یعنی بدون محدودیت)"
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Check required secrets and variables are configured
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -z "${RELEASE_KEYSTORE_BASE64:-}" ] && missing="$missing RELEASE_KEYSTORE_BASE64(secret)"
+          [ -z "${RELEASE_STORE_PASSWORD:-}" ] && missing="$missing RELEASE_STORE_PASSWORD(secret)"
+          [ -z "${RELEASE_KEY_ALIAS:-}" ] && missing="$missing RELEASE_KEY_ALIAS(secret)"
+          [ -z "${RELEASE_KEY_PASSWORD:-}" ] && missing="$missing RELEASE_KEY_PASSWORD(secret)"
+          [ -z "${UPDATES_REPO_TOKEN:-}" ] && missing="$missing UPDATES_REPO_TOKEN(secret)"
+          [ -z "${UPDATES_REPO:-}" ] && missing="$missing UPDATES_REPO(variable)"
+          [ -z "${UPDATE_BASE_URL_ADMIN:-}" ] && missing="$missing UPDATE_BASE_URL_ADMIN(variable)"
+          [ -z "${UPDATE_BASE_URL_VIEWER:-}" ] && missing="$missing UPDATE_BASE_URL_VIEWER(variable)"
+          if [ -n "$missing" ]; then
+            echo "ERROR: این مقادیر در Settings -> Secrets and variables تنظیم نشده‌اند:"
+            for m in $missing; do echo "  - $m"; done
+            echo "به RELEASE_AUTOMATION_FA.md مراجعه کنید."
+            exit 1
+          fi
+          echo "همه‌ی secrets/variables لازم تنظیم شده‌اند."
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          UPDATES_REPO_TOKEN: ${{ secrets.UPDATES_REPO_TOKEN }}
+          UPDATES_REPO: ${{ vars.UPDATES_REPO }}
+          UPDATE_BASE_URL_ADMIN: ${{ vars.UPDATE_BASE_URL_ADMIN }}
+          UPDATE_BASE_URL_VIEWER: ${{ vars.UPDATE_BASE_URL_VIEWER }}
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle 8.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.6'
+
+      - name: Decode release keystore(s)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci
+          echo "${RELEASE_KEYSTORE_BASE64}" | base64 -d > ci/release-signing.jks
+          test -s ci/release-signing.jks
+          if [ -n "${RELEASE_VIEWER_KEYSTORE_BASE64:-}" ]; then
+            echo "${RELEASE_VIEWER_KEYSTORE_BASE64}" | base64 -d > ci/release-viewer-signing.jks
+            test -s ci/release-viewer-signing.jks
+            echo "Separate Viewer signing key detected — Admin and Viewer will be signed with different keys."
+          else
+            echo "No separate Viewer signing key configured — Viewer will be signed with the same key as Admin (set RELEASE_VIEWER_KEYSTORE_BASE64 to use a separate one)."
+          fi
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_VIEWER_KEYSTORE_BASE64: ${{ secrets.RELEASE_VIEWER_KEYSTORE_BASE64 }}
+
+      - name: Build Admin Release APK
+        env:
+          RELEASE_STORE_FILE: ${{ github.workspace }}/ci/release-signing.jks
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          POLICY_PUBLIC_KEY: ${{ vars.POLICY_PUBLIC_KEY }}
+          ADMIN_POLICY_PRIVATE_KEY: ${{ secrets.ADMIN_POLICY_PRIVATE_KEY }}
+        run: gradle :app:assembleAdminRelease -PreleaseNumber=$GITHUB_RUN_NUMBER --stacktrace
+
+      - name: Build Viewer Release APK
+        env:
+          RELEASE_STORE_FILE: ${{ github.workspace }}/ci/release-signing.jks
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          RELEASE_VIEWER_STORE_FILE: ${{ github.workspace }}/ci/release-viewer-signing.jks
+          RELEASE_VIEWER_STORE_PASSWORD: ${{ secrets.RELEASE_VIEWER_STORE_PASSWORD }}
+          RELEASE_VIEWER_KEY_ALIAS: ${{ secrets.RELEASE_VIEWER_KEY_ALIAS }}
+          RELEASE_VIEWER_KEY_PASSWORD: ${{ secrets.RELEASE_VIEWER_KEY_PASSWORD }}
+          POLICY_PUBLIC_KEY: ${{ vars.POLICY_PUBLIC_KEY }}
+        run: gradle :app:assembleViewerRelease -PreleaseNumber=$GITHUB_RUN_NUMBER --stacktrace
+
+      - name: Remove decoded keystore(s)
+        if: always()
+        run: rm -f ci/release-signing.jks ci/release-viewer-signing.jks
+
+      - name: Verify Release APKs exist and are actually signed (not debug)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f app/build/outputs/apk/admin/release/app-admin-release.apk
+          test -f app/build/outputs/apk/viewer/release/app-viewer-release.apk
+
+      - name: Locate aapt
+        id: aapt
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAPT="$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name aapt -perm -111 2>/dev/null | sort -V | tail -n 1)"
+          if [ -z "${AAPT}" ] || [ ! -x "${AAPT}" ]; then
+            echo "ERROR: Android aapt was not found under ${ANDROID_HOME}/build-tools"
+            exit 1
+          fi
+          echo "aapt_path=${AAPT}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate update.json manifests from the signed APKs
+        shell: bash
+        env:
+          AAPT: ${{ steps.aapt.outputs.aapt_path }}
+          UPDATE_BASE_URL_ADMIN: ${{ vars.UPDATE_BASE_URL_ADMIN }}
+          UPDATE_BASE_URL_VIEWER: ${{ vars.UPDATE_BASE_URL_VIEWER }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
+          FORCE_UPDATE: ${{ github.event.inputs.force_update }}
+          MIN_SUPPORTED_VERSION: ${{ github.event.inputs.min_supported_version }}
+        run: |
+          set -euo pipefail
+          mkdir -p out/admin out/user
+
+          process_apk() {
+            local apk="$1" outdir="$2" base_url="$3"
+            local badging package version_code version_name sha apk_name
+            badging="$("$AAPT" dump badging "$apk")"
+            package="$(printf '%s\n' "$badging" | grep -oE "package: name='[^']+'" | sed "s/package: name='//;s/'//")"
+            version_code="$(printf '%s\n' "$badging" | grep -oE "versionCode='[0-9]+'" | head -n1 | sed "s/versionCode='//;s/'//")"
+            version_name="$(printf '%s\n' "$badging" | grep -oE "versionName='[^']*'" | head -n1 | sed "s/versionName='//;s/'//")"
+            sha="$(sha256sum "$apk" | cut -d' ' -f1)"
+            apk_name="$(basename "$apk")"
+
+            cp "$apk" "$outdir/$apk_name"
+            python3 "${GITHUB_WORKSPACE}/.github/scripts/generate_update_manifest.py" \
+              --package "$package" \
+              --version-code "$version_code" \
+              --version-name "$version_name" \
+              --apk-url "${base_url%/}/$apk_name" \
+              --sha256 "$sha" \
+              --force-update "${FORCE_UPDATE:-false}" \
+              --min-supported-version "${MIN_SUPPORTED_VERSION:-0}" \
+              --release-notes "${RELEASE_NOTES:-}" \
+              --output "$outdir/update.json"
+          }
+
+          process_apk "app/build/outputs/apk/admin/release/app-admin-release.apk" "out/admin" "${UPDATE_BASE_URL_ADMIN}"
+          process_apk "app/build/outputs/apk/viewer/release/app-viewer-release.apk" "out/user" "${UPDATE_BASE_URL_VIEWER}"
+
+          echo "--- out/admin/update.json ---"; cat out/admin/update.json
+          echo "--- out/user/update.json ---"; cat out/user/update.json
+
+      - name: Checkout updates repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.UPDATES_REPO }}
+          token: ${{ secrets.UPDATES_REPO_TOKEN }}
+          path: updates-repo
+
+      - name: Publish APKs and update.json to updates repo
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p updates-repo/admin updates-repo/user
+          cp out/admin/*.apk updates-repo/admin/
+          cp out/admin/update.json updates-repo/admin/update.json
+          cp out/user/*.apk updates-repo/user/
+          cp out/user/update.json updates-repo/user/update.json
+
+          cd updates-repo
+          git config user.name "tazieh-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "چیزی برای انتشار جدید نبود (فایل‌ها یکسان بودند)."
+          else
+            git commit -m "Release build #${GITHUB_RUN_NUMBER}"
+            git push
+          fi
+
+      - name: Upload Release APKs as workflow artifacts (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tazieh-release-apks-${{ github.run_number }}
+          path: |
+            app/build/outputs/apk/admin/release/app-admin-release.apk
+            app/build/outputs/apk/viewer/release/app-viewer-release.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload build reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-build-reports
+          path: |
+            **/build/reports/**
+            **/build/outputs/logs/**
+          if-no-files-found: ignore
+          retention-days: 7
