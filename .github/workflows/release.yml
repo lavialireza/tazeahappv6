@@ -82,13 +82,31 @@ jobs:
           if [ -n "${RELEASE_VIEWER_KEYSTORE_BASE64:-}" ]; then
             echo "${RELEASE_VIEWER_KEYSTORE_BASE64}" | base64 -d > ci/release-viewer-signing.jks
             test -s ci/release-viewer-signing.jks
+            {
+              echo "RELEASE_VIEWER_STORE_FILE=${GITHUB_WORKSPACE}/ci/release-viewer-signing.jks"
+              echo "RELEASE_VIEWER_STORE_PASSWORD=${RELEASE_VIEWER_STORE_PASSWORD}"
+              echo "RELEASE_VIEWER_KEY_ALIAS=${RELEASE_VIEWER_KEY_ALIAS}"
+              echo "RELEASE_VIEWER_KEY_PASSWORD=${RELEASE_VIEWER_KEY_PASSWORD}"
+            } >> "$GITHUB_ENV"
             echo "Separate Viewer signing key detected — Admin and Viewer will be signed with different keys."
           else
-            echo "No separate Viewer signing key configured — Viewer will be signed with the same key as Admin (set RELEASE_VIEWER_KEYSTORE_BASE64 to use a separate one)."
+            {
+              echo "RELEASE_VIEWER_STORE_FILE=${GITHUB_WORKSPACE}/ci/release-signing.jks"
+              echo "RELEASE_VIEWER_STORE_PASSWORD=${RELEASE_STORE_PASSWORD}"
+              echo "RELEASE_VIEWER_KEY_ALIAS=${RELEASE_KEY_ALIAS}"
+              echo "RELEASE_VIEWER_KEY_PASSWORD=${RELEASE_KEY_PASSWORD}"
+            } >> "$GITHUB_ENV"
+            echo "No separate Viewer signing key configured — Viewer will use the Admin release keystore."
           fi
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
           RELEASE_VIEWER_KEYSTORE_BASE64: ${{ secrets.RELEASE_VIEWER_KEYSTORE_BASE64 }}
+          RELEASE_VIEWER_STORE_PASSWORD: ${{ secrets.RELEASE_VIEWER_STORE_PASSWORD }}
+          RELEASE_VIEWER_KEY_ALIAS: ${{ secrets.RELEASE_VIEWER_KEY_ALIAS }}
+          RELEASE_VIEWER_KEY_PASSWORD: ${{ secrets.RELEASE_VIEWER_KEY_PASSWORD }}
 
       - name: Build Admin Release APK
         env:
@@ -106,10 +124,6 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-          RELEASE_VIEWER_STORE_FILE: ${{ github.workspace }}/ci/release-viewer-signing.jks
-          RELEASE_VIEWER_STORE_PASSWORD: ${{ secrets.RELEASE_VIEWER_STORE_PASSWORD }}
-          RELEASE_VIEWER_KEY_ALIAS: ${{ secrets.RELEASE_VIEWER_KEY_ALIAS }}
-          RELEASE_VIEWER_KEY_PASSWORD: ${{ secrets.RELEASE_VIEWER_KEY_PASSWORD }}
           POLICY_PUBLIC_KEY: ${{ vars.POLICY_PUBLIC_KEY }}
         run: gradle :app:assembleViewerRelease -PreleaseNumber=$GITHUB_RUN_NUMBER --stacktrace
 
