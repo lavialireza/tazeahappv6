@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <permission
-        android:name="com.example.bookapp.permission.POLICY_APPLIED"
-        android:protectionLevel="signature" />
-    <uses-permission android:name="com.example.bookapp.permission.POLICY_APPLIED" />
+    <uses-permission android:name="${policyAppliedPermission}" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -15,7 +12,7 @@
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="${appLabel}"
+        android:label="${appLabel}${appLabelSuffix}"
         android:supportsRtl="true">
 
         <activity
@@ -39,14 +36,6 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
-        <receiver
-            android:name=".PolicyAppliedReceiver"
-            android:exported="true"
-            android:permission="com.example.bookapp.permission.POLICY_APPLIED">
-            <intent-filter>
-                <action android:name="com.example.bookapp.POLICY_APPLIED" />
-            </intent-filter>
-        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"
