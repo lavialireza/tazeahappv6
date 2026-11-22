@@ -33,7 +33,14 @@ fun ContentManagementScreen(
     onOpenEditor: () -> Unit,
     onImportJson: () -> Unit,
     onExportJson: () -> Unit,
+    onExportInternalJson: () -> Unit,
+    onExportWord: () -> Unit,
     onImportWord: () -> Unit,
+    onArchiveSourceIntake: () -> Unit,
+    onOpenVersionComparison: () -> Unit,
+    onOpenGlossary: () -> Unit,
+    onOpenEncyclopedia: () -> Unit,
+    onOpenPerformanceManagement: () -> Unit,
     onDetailedHealthCheck: () -> Unit,
     onExportHealthReport: () -> Unit,
     busy: Boolean,
@@ -122,11 +129,35 @@ fun ContentManagementScreen(
                         }
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = onImportWord, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-                            Text("ورود از Word (.docx)")
+                            Text("ورود مستقیم محتوای Word (.docx)")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Button(onClick = onArchiveSourceIntake, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                            Text("ثبت سند اصلی Word / PDF در آرشیو پژوهشی")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = onOpenVersionComparison, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                            Text("مقایسه دو نسخه مستقل یک تعزیه")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = onOpenEncyclopedia, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                            Text("مدیریت دانشنامه: اشخاص، وقایع، مکان‌ها و منابع")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Button(onClick = onOpenPerformanceManagement, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                            Text("مدیریت گروه‌ها، شبیه‌خوان‌ها و برنامه اجرا")
                         }
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = onExportJson, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-                            Text("خروجی JSON سازگار با برنامه جانبی")
+                            Text("خروجی JSON سازگار با برنامه جانبی (قالب ثابت خارجی)")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = onExportInternalJson, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                            Text("خروجی JSON داخلیِ نسخه‌دار")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = onExportWord, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                            Text("خروجی Word مجموعه تعزیه‌ها")
                         }
                     }
                 }

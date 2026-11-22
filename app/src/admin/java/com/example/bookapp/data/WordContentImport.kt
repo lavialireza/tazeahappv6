@@ -19,7 +19,8 @@ data class WordImportPreview(
     val sections: Int = 0,
     val paragraphs: Int = 0,
     val existingItems: Int = 0,
-    val newItems: Int = 0
+    val newItems: Int = 0,
+    val changedSections: Int = 0
 )
 
 private data class WordParagraph(val style: String, val text: String)
@@ -92,7 +93,17 @@ fun wordToCompatibleJson(bytes: ByteArray): String {
                 r.getJSONArray("sections").put(currentSection)
             }
             else -> {
-                if (currentSection != null) {
+                // Some Word documents place the role text directly below the role heading
+                // and do not use Heading 4 for every section. Keep that text instead of
+                // silently dropping it from the generated JSON.
+                if (currentRole == null) ensureRole()
+                if (currentSection == null) {
+                    currentSection = JSONObject().apply {
+                        put("title", "متن اصلی")
+                        put("content", text)
+                    }
+                    currentRole!!.getJSONArray("sections").put(currentSection)
+                } else if (currentSection != null) {
                     val old = currentSection!!.optString("content", "")
                     currentSection!!.put("content", if (old.isBlank()) text else "$old\n$text")
                 }
@@ -133,7 +144,8 @@ suspend fun previewWordImport(db: AppDatabase, bytes: ByteArray): Pair<WordImpor
         sections = jsonPreview.sections,
         paragraphs = paragraphs,
         existingItems = jsonPreview.existingItems,
-        newItems = jsonPreview.newItems
+        newItems = jsonPreview.newItems,
+        changedSections = jsonPreview.changedSections
     )
     return preview to json
 }

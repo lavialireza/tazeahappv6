@@ -18,13 +18,15 @@ data class ContentImportPreview(
     val roles: Int = 0,
     val sections: Int = 0,
     val existingItems: Int = 0,
-    val newItems: Int = 0
+    val newItems: Int = 0,
+    val changedSections: Int = 0
 )
 
-private val FIELD_KEYS = setOf("title", "taziehs")
-private val TAZIEH_KEYS = setOf("title", "roles")
-private val ROLE_KEYS = setOf("title", "sections")
-private val SECTION_KEYS = setOf("title", "content")
+// UID is part of the portable schema. Timestamps and author metadata are optional.
+private val FIELD_KEYS = setOf("title", "uid", "createdAt", "updatedAt", "taziehs")
+private val TAZIEH_KEYS = setOf("title", "uid", "createdAt", "updatedAt", "author", "authorEmail", "roles")
+private val ROLE_KEYS = setOf("title", "uid", "createdAt", "updatedAt", "sections")
+private val SECTION_KEYS = setOf("title", "uid", "createdAt", "updatedAt", "content", "audio")
 
 /** Validate the exact external schema used by the companion program. */
 fun validateExternalContentJson(text: String): List<String> {
@@ -90,24 +92,28 @@ private fun checkKeys(obj: JSONObject, allowed: Set<String>, label: String, erro
     }
 }
 
-/** Export exactly the companion-program schema. No UID/internal metadata is written. */
+/** Export the portable content schema, including stable IDs shared with the companion converter. */
 suspend fun exportContentJson(db: AppDatabase): String {
     val root = JSONArray()
     db.fieldDao().getAll().forEach { field ->
         root.put(JSONObject().apply {
             put("title", field.title)
+            put("uid", field.uid)
             put("taziehs", JSONArray().also { taziehArray ->
                 db.taziehDao().getByField(field.id).forEach { tazieh ->
                     taziehArray.put(JSONObject().apply {
                         put("title", tazieh.title)
+                        put("uid", tazieh.uid)
                         put("roles", JSONArray().also { roleArray ->
                             db.roleDao().getByTazieh(tazieh.id).forEach { role ->
                                 roleArray.put(JSONObject().apply {
                                     put("title", role.title)
+                                    put("uid", role.uid)
                                     put("sections", JSONArray().also { sectionArray ->
                                         db.sectionDao().getByRole(role.id).forEach { section ->
                                             sectionArray.put(JSONObject().apply {
                                                 put("title", section.title)
+                                                put("uid", section.uid)
                                                 put("content", section.content)
                                             })
                                         }
@@ -124,44 +130,148 @@ suspend fun exportContentJson(db: AppDatabase): String {
 }
 
 suspend fun previewContentImport(db: AppDatabase, text: String): ContentImportPreview {
-    val errors = validateExternalContentJson(text)
+    val errors = validateExternalContentJson(text).toMutableList()
     if (errors.isNotEmpty()) return ContentImportPreview(false, errors)
 
-    val root = JSONArray(text)
-    var fields = 0; var taziehs = 0; var roles = 0; var sections = 0; var existing = 0
+    val root = ensureStableContentUids(JSONArray(text))
+    var fields = 0; var taziehs = 0; var roles = 0; var sections = 0; var existing = 0; var changedSections = 0
     for (fi in 0 until root.length()) {
         val f = root.getJSONObject(fi); fields++
-        val field = db.fieldDao().getByTitle(f.getString("title"))
+        val fieldUid = f.getString("uid")
+        val fieldByTitle = db.fieldDao().getByTitle(f.getString("title"))
+        val fieldByUid = db.fieldDao().getByUid(fieldUid)
+        if (fieldByTitle != null && fieldByTitle.uid != fieldUid) {
+            errors += "زمینه «${f.getString("title")}» تکراری است اما شناسه آن با زمینه موجود متفاوت است؛ برای جلوگیری از ساخت زمینه تکراری، ابتدا شناسه را تطبیق دهید."
+        }
+        val field = fieldByUid ?: fieldByTitle
         if (field != null) existing++
         val ta = f.getJSONArray("taziehs")
         for (ti in 0 until ta.length()) {
             val t = ta.getJSONObject(ti); taziehs++
-            val tazieh = field?.let { db.taziehDao().getByTitle(it.id, t.getString("title")) }
+            val tUid = t.getString("uid")
+            val tByTitle = field?.let { db.taziehDao().getByTitle(it.id, t.getString("title")) }
+            val tByUid = db.taziehDao().getByUid(tUid)
+            if (tByTitle != null && tByTitle.uid != tUid) {
+                errors += "مجلس «${t.getString("title")}» در زمینه «${f.getString("title")}» تکراری است اما شناسه آن متفاوت است؛ ورود متوقف شد تا مجلس ناخواسته تکراری نشود."
+            }
+            val tazieh = tByUid ?: tByTitle
             if (tazieh != null) existing++
             val rs = t.getJSONArray("roles")
             for (ri in 0 until rs.length()) {
                 val r = rs.getJSONObject(ri); roles++
-                val role = tazieh?.let { db.roleDao().getByTitle(it.id, r.getString("title")) }
+                val rUid = r.getString("uid")
+                val roleByTitle = tazieh?.let { db.roleDao().getByTitle(it.id, r.getString("title")) }
+                val roleByUid = db.roleDao().getByUid(rUid)
+                if (roleByTitle != null && roleByTitle.uid != rUid) {
+                    errors += "نقش «${r.getString("title")}» در مجلس «${t.getString("title")}» شناسه متفاوت دارد؛ ورود متوقف شد."
+                }
+                val role = roleByUid ?: roleByTitle
                 if (role != null) existing++
                 val ss = r.getJSONArray("sections")
                 for (si in 0 until ss.length()) {
-                    val s = ss.getJSONObject(si); sections++
-                    val section = role?.let { db.sectionDao().getByTitle(it.id, s.getString("title")) }
-                    if (section != null) existing++
+                    val sectionJson = ss.getJSONObject(si); sections++
+                    val sUid = sectionJson.getString("uid")
+                    val sectionByTitle = role?.let { db.sectionDao().getByTitle(it.id, sectionJson.getString("title")) }
+                    val sectionByUid = db.sectionDao().getByUid(sUid)
+                    if (sectionByTitle != null && sectionByTitle.uid != sUid) {
+                        errors += "بخش «${sectionJson.getString("title")}» در نقش «${r.getString("title")}» شناسه متفاوت دارد؛ ورود متوقف شد."
+                    }
+                    val currentSection = sectionByUid ?: sectionByTitle
+                    if (currentSection != null) {
+                        existing++
+                        if (currentSection.content != sectionJson.getString("content")) changedSections++
+                    }
                 }
             }
         }
     }
     val total = fields + taziehs + roles + sections
-    return ContentImportPreview(true, fields = fields, taziehs = taziehs, roles = roles, sections = sections, existingItems = existing, newItems = total - existing)
+    return ContentImportPreview(errors.isEmpty(), errors, fields, taziehs, roles, sections, existing, total - existing, changedSections)
 }
 
 suspend fun importContentJson(db: AppDatabase, text: String): ContentImportPreview {
     val preview = previewContentImport(db, text)
     if (!preview.valid) return preview
-    // Use the content hash as source ownership. This keeps imported section cleanup isolated.
-    mergeContentFromJson(db, text, ContentUid.source(text))
+
+    // One majlis is one independently-owned source. Editing its text therefore does
+    // not change its source identity and cannot disturb another majlis/file.
+    val canonical = ensureStableContentUids(JSONArray(text))
+    for (fi in 0 until canonical.length()) {
+        val field = canonical.getJSONObject(fi)
+        val fieldUid = field.getString("uid")
+        val majlisList = field.getJSONArray("taziehs")
+        for (ti in 0 until majlisList.length()) {
+            val majlis = majlisList.getJSONObject(ti)
+            val oneMajlis = JSONArray().put(JSONObject().apply {
+                put("title", field.getString("title"))
+                put("uid", fieldUid)
+                put("taziehs", JSONArray().put(majlis))
+            })
+            val majlisUid = majlis.getString("uid")
+            mergeContentFromJson(db, oneMajlis.toString(), ContentUid.source("majlis:$majlisUid"))
+        }
+    }
     return preview
+}
+
+/** Adds deterministic IDs where a source (for example DOCX) did not provide them. */
+fun ensureStableContentUids(input: JSONArray): JSONArray {
+    val result = JSONArray()
+    for (fi in 0 until input.length()) {
+        val field = input.getJSONObject(fi)
+        val fieldUid = field.optString("uid").ifBlank {
+            ContentUid.derived("field", "root", field.getString("title"))
+        }
+        val outField = JSONObject().put("title", field.getString("title")).put("uid", fieldUid)
+        copyOptionalMetadata(field, outField)
+        val taziehOut = JSONArray()
+        val taziehs = field.getJSONArray("taziehs")
+        for (ti in 0 until taziehs.length()) {
+            val tazieh = taziehs.getJSONObject(ti)
+            val taziehUid = tazieh.optString("uid").ifBlank {
+                ContentUid.derived("tazieh", fieldUid, tazieh.getString("title"))
+            }
+            val outTazieh = JSONObject().put("title", tazieh.getString("title")).put("uid", taziehUid)
+            copyOptionalMetadata(tazieh, outTazieh)
+            val roleOut = JSONArray()
+            val roles = tazieh.getJSONArray("roles")
+            for (ri in 0 until roles.length()) {
+                val role = roles.getJSONObject(ri)
+                val roleUid = role.optString("uid").ifBlank {
+                    ContentUid.derived("role", taziehUid, role.getString("title"))
+                }
+                val outRole = JSONObject().put("title", role.getString("title")).put("uid", roleUid)
+                copyOptionalMetadata(role, outRole)
+                val sectionOut = JSONArray()
+                val sections = role.getJSONArray("sections")
+                for (si in 0 until sections.length()) {
+                    val section = sections.getJSONObject(si)
+                    val sectionUid = section.optString("uid").ifBlank {
+                        ContentUid.derivedWithIndex("section", roleUid, section.getString("title"), si)
+                    }
+                    val outSection = JSONObject()
+                        .put("title", section.getString("title"))
+                        .put("content", section.getString("content"))
+                        .put("uid", sectionUid)
+                    copyOptionalMetadata(section, outSection)
+                    sectionOut.put(outSection)
+                }
+                outRole.put("sections", sectionOut)
+                roleOut.put(outRole)
+            }
+            outTazieh.put("roles", roleOut)
+            taziehOut.put(outTazieh)
+        }
+        outField.put("taziehs", taziehOut)
+        result.put(outField)
+    }
+    return result
+}
+
+private fun copyOptionalMetadata(source: JSONObject, target: JSONObject) {
+    listOf("createdAt", "updatedAt", "author", "authorEmail", "audio").forEach { key ->
+        if (source.has(key)) target.put(key, source.get(key))
+    }
 }
 
 fun readJsonFromUri(context: Context, uri: Uri): String =

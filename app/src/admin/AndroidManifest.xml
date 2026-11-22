@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- This signature permission belongs only to the Admin application.
+         The name comes from a placeholder so the QA build type gets its own
+         ".test" namespace (see manifestPlaceholders in app/build.gradle.kts). -->
+    <permission
+        android:name="${policyAppliedPermission}"
+        android:protectionLevel="signature" />
+    <!-- Protect Admin -> Viewer policy-change notification broadcasts. -->
+    <permission
+        android:name="${policyChangedPermission}"
+        android:protectionLevel="signature" />
+
+    <application>
+        <!-- Only Admin accepts applied-policy receipts. -->
+        <receiver
+            android:name="com.example.bookapp.PolicyAppliedReceiver"
+            android:exported="true"
+            android:permission="${policyAppliedPermission}">
+            <intent-filter>
+                <action android:name="${policyAppliedAction}" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

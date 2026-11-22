@@ -29,6 +29,22 @@ class ContentMergeTest {
         """[{"title":"اصفهان","taziehs":[{"title":"عاشورا","roles":[{"title":"شمر","sections":[$sections]}]}]}]"""
 
     @Test
+    fun `import creates an initial archive version and links roles`() = runTest {
+        mergeContentFromJson(db, json(), ContentUid.source("archive-version-test"))
+
+        val field = db.fieldDao().getAll().first()
+        val tazieh = db.taziehDao().getByField(field.id).first()
+        val versions = db.archiveDao().versionsForTazieh(tazieh.uid)
+        val role = db.roleDao().getByTazieh(tazieh.id).first()
+
+        assertEquals(1, versions.size)
+        assertTrue(versions.single().isCurrent)
+        assertEquals(tazieh.uid, versions.single().taziehUid)
+        assertEquals(versions.single().uid, role.versionUid)
+        assertEquals("LEGACY_UNREVIEWED", versions.single().status)
+    }
+
+    @Test
     fun `same source is idempotent`() = runTest {
         val source = ContentUid.source("test-source")
         mergeContentFromJson(db, json(), source)

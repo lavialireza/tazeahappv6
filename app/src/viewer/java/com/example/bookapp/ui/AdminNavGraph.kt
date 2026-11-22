@@ -14,7 +14,19 @@ import com.example.bookapp.data.AppDatabase
 fun NavGraphBuilder.adminOnlyRoutes(
     navController: NavHostController,
     db: AppDatabase,
-    context: android.content.Context
+    context: android.content.Context,
+    darkMode: Boolean,
+    onDarkModeChange: (Boolean) -> Unit,
+    autoDarkMode: Boolean,
+    onAutoDarkModeChange: (Boolean) -> Unit,
+    fontScale: Float,
+    onFontScaleChange: (Float) -> Unit,
+    themeChoice: String,
+    onThemeChoiceChange: (String) -> Unit,
+    fontChoice: String,
+    onFontChoiceChange: (String) -> Unit,
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit
 ) {
     // عمداً خالی: هیچ مسیر مدیریتی در نسخه Viewer ثبت نمی‌شود.
 }

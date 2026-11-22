@@ -1,5 +1,6 @@
 package com.example.bookapp.ui.screens
 
+import com.example.bookapp.BuildConfig
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -49,7 +50,8 @@ private val accessPermissionTrees = listOf(
     PermissionTree("امکانات پژوهشی", listOf("footnotes", "dictionary", "taziehCorrections")),
     PermissionTree("نقش و تمرین", listOf("myRole")),
     PermissionTree("خروجی", listOf("pdf")),
-    PermissionTree("تقویم و اطلاعات", listOf("calendar", "appIntro"))
+    PermissionTree("تقویم و اطلاعات", listOf("calendar", "appIntro")),
+    PermissionTree("هوش مصنوعی و پژوهش هوشمند", listOf("ai"))
 )
 
 private val permissionChildren = mapOf(
@@ -71,7 +73,8 @@ private val permissionChildren = mapOf(
     "myRole" to listOf("myRole.view", "myRole.select", "myRole.remove", "myRole.rehearse", "myRole.pdf"),
     "dictionary" to listOf("dictionary.view", "dictionary.add", "dictionary.edit", "dictionary.delete"),
     "taziehCorrections" to listOf("taziehCorrections.view", "taziehCorrections.add", "taziehCorrections.edit", "taziehCorrections.delete", "taziehCorrections.apply"),
-    "calendar" to listOf("calendar.view", "calendar.suggestions")
+    "calendar" to listOf("calendar.view", "calendar.suggestions"),
+    "ai" to listOf("ai.analysis", "ai.speaker", "ai.glossary", "ai.semanticSearch", "ai.transcription")
 )
 
 private fun permissionDescription(key: String): String = when (key) {
@@ -87,13 +90,19 @@ private fun permissionDescription(key: String): String = when (key) {
     "gallery" -> "والد گالری"
     "copy" -> "والد کپی متن"
     "share" -> "والد اشتراک‌گذاری"
-    "pdf" -> "والد خروجی PDF"
+    "pdf" -> "والد دسترسی به همه خروجی‌های قابل دریافت؛ خاموش‌کردن آن، PDF و سایر خروجی‌های کاربر را مسدود می‌کند"
     "footnotes" -> "والد پاورقی؛ فرزندان آن مشاهده، افزودن، ویرایش، حذف و همگام‌سازی دیکشنری هستند"
     "appIntro" -> "والد معرفی برنامه"
     "myRole" -> "والد نقش من؛ مدیریت نقش‌های انتخاب‌شده و عملیات مرتبط"
     "dictionary" -> "والد دیکشنری اصطلاحات تعزیه؛ فرزندان: مشاهده، افزودن، ویرایش، حذف"
     "taziehCorrections" -> "والد دیکشنری اصلاحات تعزیه؛ مستقل از دیکشنری اصطلاحات"
     "calendar" -> "والد تقویم محرم و پیشنهادهای مرتبط"
+    "ai" -> "والد دسترسی به ابزارهای هوشمند؛ خاموش‌کردن آن همه قابلیت‌های هوش مصنوعی کاربر را مسدود می‌کند"
+    "ai.analysis" -> "تحلیل ساختار، عنوان‌ها و تکرارهای احتمالی متن؛ فقط پیشنهاد"
+    "ai.speaker" -> "شناسایی الگوهای نام گوینده و پیشنهاد تفکیک گفتار"
+    "ai.glossary" -> "استخراج واژه‌های پرتکرار برای بررسی و ورود احتمالی به واژه‌نامه"
+    "ai.semanticSearch" -> "جستجوی معنایی/تقریبی آفلاین در متن‌های موجود"
+    "ai.transcription" -> "تبدیل گفتار به متن با برنامه تشخیص گفتار نصب‌شده روی دستگاه؛ ممکن است به اینترنت نیاز داشته باشد"
     else -> "قابلیت جزئی مستقل"
 }
 
@@ -211,6 +220,47 @@ private fun PermissionGroupEditor(
 }
 
 @Composable
+private fun DirectorOfficePermissionEditor(
+    permissions: Map<String, Boolean>,
+    onChange: (String, Boolean) -> Unit,
+    title: String
+) {
+    val rows = listOf(
+        "director.official.view" to "مشاهده دفتر رسمی منتشرشده",
+        "director.personal.create" to "ساخت دفتر شخصی",
+        "director.personal.method.number" to "ساخت شماره‌محور",
+        "director.personal.method.fulltext" to "ساخت با متن کامل",
+        "director.personal.method.manual" to "ساخت به روش دستی",
+        "director.personal.method.selector" to "استفاده از انتخاب‌گر",
+        "director.personal.edit" to "ویرایش دفتر شخصی",
+        "director.source.import" to "ورود فایل‌های منبع به دفتر"
+    )
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text("روش‌های ساخت مستقل کنترل می‌شوند. روش ناسازگار با روش محتوای منتشرشده فقط در صورت فعال‌سازی صریح مدیر در دسترس قرار می‌گیرد.", style = MaterialTheme.typography.bodySmall)
+            rows.forEach { (key, label) ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Switch(checked = permissions[key] == true, onCheckedChange = { onChange(key, it) })
+                }
+            }
+            listOf(
+                "director.official.publish" to "انتشار نسخه رسمی",
+                "director.copy" to "کپی دفتر",
+                "director.export" to "خروجی گرفتن"
+            ).forEach { (key, label) ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Switch(checked = false, onCheckedChange = {}, enabled = false)
+                }
+            }
+            Text("انتشار رسمی، کپی و خروجی در نسخه Viewer همواره مسدود است.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+@Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun ViewerAccessManagementScreen(
     onBack: () -> Unit
@@ -307,13 +357,13 @@ fun ViewerAccessManagementScreen(
                 type = "application/json"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                setPackage("com.example.bookapp.viewer")
+                setPackage(BuildConfig.VIEWER_APPLICATION_ID)
             }
             context.startActivity(intent)
             markSentIfSpecial()
             val version = ViewerAccessPolicy.getPolicyVersion(context, target)
-            context.sendBroadcast(Intent("com.example.bookapp.POLICY_CHANGED").apply {
-                setPackage("com.example.bookapp.viewer")
+            context.sendBroadcast(Intent(BuildConfig.POLICY_CHANGED_ACTION).apply {
+                setPackage(BuildConfig.VIEWER_APPLICATION_ID)
                 putExtra("targetInstallationId", target.trim().uppercase(Locale.US))
                 putExtra("policyVersion", version)
             })
@@ -407,6 +457,11 @@ fun ViewerAccessManagementScreen(
                             onBulkChange = { keys, value -> requestBulkChange(keys, value, false) },
                             searchQuery = permissionSearch
                         )
+                        DirectorOfficePermissionEditor(
+                            permissions = publicPermissions,
+                            title = "دسترسی دفتر معین‌البکا — پروفایل عمومی",
+                            onChange = { key, value -> publicPermissions = publicPermissions + (key to value) }
+                        )
                         Button(onClick = { ViewerAccessPolicy.setPublicPermissions(context, publicPermissions); savedPublicPermissions = publicPermissions; lastPublicChangeAt = System.currentTimeMillis(); message = "پروفایل عمومی ذخیره شد و آماده ارسال است." }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Filled.Save, null); Spacer(Modifier.width(6.dp)); Text("ذخیره پروفایل عمومی") }
                         if (publicDirty) {
                             Text("تغییرات ذخیره‌نشده: ${publicPermissions.keys.count { publicPermissions[it] != savedPublicPermissions[it] }} مورد", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
@@ -453,6 +508,42 @@ fun ViewerAccessManagementScreen(
                                 }
                             }
                         }
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(12.dp)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("دسترسی هوش مصنوعی این کاربر", style = MaterialTheme.typography.titleSmall)
+                                        Text(if (customPermissions["ai"] == true) "فعال؛ ابزارهای انتخاب‌شده قابل استفاده‌اند." else "غیرفعال؛ هیچ ابزار هوشمندی برای این کاربر اجرا نمی‌شود.", style = MaterialTheme.typography.bodySmall)
+                                    }
+                                    Switch(
+                                        checked = customPermissions["ai"] == true,
+                                        onCheckedChange = { value ->
+                                            val updated = customPermissions.toMutableMap()
+                                            updated["ai"] = value
+                                            listOf("ai.analysis", "ai.speaker", "ai.glossary", "ai.semanticSearch", "ai.transcription").forEach { updated[it] = value }
+                                            customPermissions = updated
+                                        }
+                                    )
+                                }
+                                listOf(
+                                    "ai.analysis" to "تحلیل متن و تکرارها",
+                                    "ai.speaker" to "پیشنهاد گوینده",
+                                    "ai.glossary" to "پیشنهاد واژه‌نامه",
+                                    "ai.semanticSearch" to "جستجوی معنایی",
+                                    "ai.transcription" to "تبدیل گفتار به متن"
+                                ).forEach { (key, label) ->
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                        Switch(checked = customPermissions[key] == true, enabled = customPermissions["ai"] == true, onCheckedChange = { value -> customPermissions = customPermissions + (key to value) })
+                                    }
+                                }
+                            }
+                        }
+                        DirectorOfficePermissionEditor(
+                            permissions = customPermissions,
+                            title = "دسترسی دفتر معین‌البکا — این Viewer",
+                            onChange = { key, value -> customPermissions = customPermissions + (key to value) }
+                        )
                         OutlinedTextField(expiryText, { expiryText = it }, label = { Text("انقضا (YYYY-MM-DD، خالی = بدون انقضا)") }, modifier = Modifier.fillMaxWidth())
                         Spacer(Modifier.height(6.dp))
                         if (profile == ViewerAccessPolicy.PROFILE_CUSTOM) {

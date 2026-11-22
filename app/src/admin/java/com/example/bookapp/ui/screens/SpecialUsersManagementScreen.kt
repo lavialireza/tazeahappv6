@@ -1,5 +1,6 @@
 package com.example.bookapp.ui.screens
 
+import com.example.bookapp.BuildConfig
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.horizontalScroll
@@ -228,7 +229,7 @@ fun SpecialUsersManagementScreen(onBack: () -> Unit) {
                                                 type = "application/json"
                                                 putExtra(Intent.EXTRA_STREAM, uri)
                                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                setPackage("com.example.bookapp.viewer")
+                                                setPackage(BuildConfig.VIEWER_APPLICATION_ID)
                                             }
                                             context.startActivity(intent)
                                             val sent = ViewerAccessPolicy.markPolicySent(context, disabled.installationId, policyVersion) ?: disabled
@@ -446,7 +447,7 @@ private fun SpecialUserEditorDialog(
                             type = "application/json"
                             putExtra(Intent.EXTRA_STREAM, uri)
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            setPackage("com.example.bookapp.viewer")
+                            setPackage(BuildConfig.VIEWER_APPLICATION_ID)
                         }
                         context.startActivity(intent)
                         val sentUser = ViewerAccessPolicy.markPolicySent(context, user.installationId, policyVersion) ?: user.copy(lastPolicySentAt = System.currentTimeMillis(), lastPolicySentVersion = policyVersion)
@@ -569,7 +570,7 @@ private fun BulkPolicySendDialog(
                             intent.type = "application/json"
                             intent.putExtra(Intent.EXTRA_STREAM, uri)
                             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            intent.setPackage("com.example.bookapp.viewer")
+                            intent.setPackage(BuildConfig.VIEWER_APPLICATION_ID)
                             context.startActivity(intent)
                             val sent = ViewerAccessPolicy.markPolicySent(context, user.installationId, policyVersion)
                             if (sent != null) {

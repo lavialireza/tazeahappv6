@@ -227,7 +227,7 @@ fun ContentEditorScreen(
                 scope.launch { busy = true; try { if (d.value == null) db.taziehImageDao().insert(TaziehImageEntity(taziehId = d.taziehId, filePath = path, caption = caption)) else db.taziehImageDao().updateCaption(d.value.id, caption); reload(); message = "تصویر ذخیره شد." } finally { busy = false; dialog = null } }
             }
             is EditorDialog.Role -> RoleDialog(d.value, d.parentTaziehId, { dialog = null }) { title, order ->
-                scope.launch { busy = true; try { if (d.value == null) db.roleDao().insert(RoleEntity(taziehId = d.parentTaziehId, title = title, orderIndex = order)) else db.roleDao().updateFromContent(d.value.id, d.parentTaziehId, title, order, d.value.uid); reload(); message = "نقش ذخیره شد." } finally { busy = false; dialog = null } }
+                scope.launch { busy = true; try { if (d.value == null) db.roleDao().insert(RoleEntity(taziehId = d.parentTaziehId, title = title, orderIndex = order)) else db.roleDao().updateFromContent(d.value.id, d.parentTaziehId, title, order, d.value.uid, d.value.versionUid); reload(); message = "نقش ذخیره شد." } finally { busy = false; dialog = null } }
             }
             is EditorDialog.Section -> SectionDialog(d.value, d.parentRoleId, { dialog = null }) { title, content, audio, order ->
                 scope.launch { busy = true; try { if (d.value == null) db.sectionDao().insert(SectionEntity(roleId = d.parentRoleId, orderIndex = order, title = title, content = content, audioUrl = audio.ifBlank { null })) else db.sectionDao().updateFromContent(d.value.id, d.parentRoleId, title, content, audio.ifBlank { null }, order, d.value.uid, d.value.sourceUid); reload(); message = "بخش ذخیره شد." } finally { busy = false; dialog = null } }

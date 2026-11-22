@@ -8,6 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.json.JSONObject
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.File
@@ -154,6 +155,36 @@ class DataLayerTest {
         assertEquals(1, db.noteDao().getAll().count { it.uid == "note-test" })
         assertEquals(1, db.dialogueDao().getByTazieh(taziehId).count { it.uid == "dialogue-test" })
         tempFile.delete()
+    }
+
+    @Test
+    fun `new portable backup declares current schema and rejects tampering before restore`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        db.noteDao().insert(NoteEntity(title = "یادداشت محافظت‌شده", content = "متن اصلی", uid = "integrity-note"))
+        val json = buildBackupJson(context, db)
+        val root = JSONObject(json)
+        assertEquals(4, root.getInt("backupVersion"))
+        assertEquals(APP_DATABASE_SCHEMA_VERSION, root.getInt("schemaVersion"))
+        assertEquals("personal_user_data", root.getString("scope"))
+        assertEquals(64, root.getString("integritySha256").length)
+
+        val notes = root.getJSONArray("notes")
+        notes.getJSONObject(0).put("content", "متن دستکاری‌شده")
+        val tempFile = File.createTempFile("backup_tampered", ".json").apply { writeText(root.toString()) }
+        val result = restoreBackupFromUri(context, db, android.net.Uri.fromFile(tempFile))
+        assertTrue(result.isFailure)
+        assertEquals("متن اصلی", db.noteDao().getByUid("integrity-note")?.content)
+        tempFile.delete()
+    }
+
+    @Test
+    fun `database health check confirms integrity foreign keys and all current tables`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val report = runDatabaseHealthCheck(context, db)
+        assertTrue(report.toPersianSummary(), report.isHealthy)
+        assertEquals(0, report.foreignKeyViolations)
+        assertTrue(report.missingTables.isEmpty())
+        assertEquals(APP_DATABASE_SCHEMA_VERSION, report.userVersion)
     }
 
 }
